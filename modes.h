@@ -5,25 +5,28 @@
 #include <GyverButton.h>
 #include "stubs.h"
 #include "stepper.h"
-
+#include "logger.h"
 
 #define sd_cs 5
 
 
-enum class ModeState{
+enum class ModeState
+{
   RUNNING,
   FORCE_STOPPING,
   STOPPED
 };
 
 
-enum class CommandState{
+enum class CommandState
+{
   CHOOSING,
   EXECUTING,
 };
 
 
-struct Command{
+struct Command
+{
   uint8_t code;
   double arg1;
   double arg2;
@@ -31,7 +34,8 @@ struct Command{
 };
 
 
-class BaseMode{
+class BaseMode
+{
   public:
     BaseMode(
       GButton* stop_btn,
@@ -39,8 +43,10 @@ class BaseMode{
       GButton* down_btn,
       GButton* up_btn,
       LiquidCrystal_I2C* lcd,
-      String name
-    ){
+      String name,
+      Logger* logger
+    )
+    {
       this->stop_btn = stop_btn;
       this->accept_btn = accept_btn;
       this->down_btn = down_btn;
@@ -48,10 +54,11 @@ class BaseMode{
       this->lcd = lcd;
       state = ModeState::STOPPED;
       this->name = name;
+      this->logger = logger;
     }
     virtual void run() = 0;
     virtual void stop() = 0;
-    virtual String get_name() = 0;
+    virtual String get_name() {return name;}
   
   protected:
     GButton* stop_btn;
@@ -62,10 +69,12 @@ class BaseMode{
     ModeState state;
     CommandState command_state;
     String name;
+    Logger* logger;
 };
 
 
-class AutomaticMode: public BaseMode{
+class AutomaticMode: public BaseMode
+{
   public:
     AutomaticMode(
       GButton* stop_btn,
@@ -74,51 +83,67 @@ class AutomaticMode: public BaseMode{
       GButton* up_btn,
       LiquidCrystal_I2C* lcd,
       String name,
-      Stepper* stepper
-    ): BaseMode(stop_btn, accept_btn, down_btn, up_btn, lcd, name){
+      Stepper* stepper,
+      Logger* logger
+    ): BaseMode(stop_btn, accept_btn, down_btn, up_btn, lcd, name, logger)
+    {
       this->stepper = stepper;
     }
 
-    uint8_t get_command(String* command_for_check){
-      if (*command_for_check == "UP"){
+    uint8_t get_command(String* command_for_check)
+    {
+      if (*command_for_check == "UP")
+      {
         return 0x01;
       }
-      else if (*command_for_check == "DOWN"){
+      else if (*command_for_check == "DOWN")
+      {
         return 0x02;
       }
-      else if (*command_for_check == "IDLE_US"){
+      else if (*command_for_check == "IDLE_US")
+      {
         return 0x03;
       }
       return 0x00;
     }
     
-    int parse_json(File* json_file, Command** command_list){
+    int parse_json(File* json_file, Command** command_list)
+    {
       
-      Serial.println("Reading from file");
+      logger->info("Reading from file");
+      //Serial.println("Reading from file");
       String json = json_file->readString();
       DynamicJsonDocument doc(2048);
       DeserializationError error = deserializeJson(doc, json);
       if (error) {
-        Serial.println("Deserialize Json failed");
-        Serial.println(error.f_str());
+        logger->error("Deserialize Json failed" + String(error.f_str()));
+        //Serial.println("Deserialize Json failed");
+        //Serial.println(error.f_str());
         return -1;
       }
 
-      if (!doc.containsKey("version")){
-        Serial.println("Version not found");
-        return -1;
-      }
-          
-      Serial.print("Program version: ");
-      Serial.println(doc["version"].as<String>());
-          
-      if (!doc.containsKey("program_body")){
-        Serial.println("Program body not found");
+      if (!doc.containsKey("version"))
+      {
+        logger->error("Version not found");
+        //Serial.println("Version not found");
         return -1;
       }
 
-      if (!doc["program_body"].containsKey("commands_len")){
-        Serial.print("commands_len not found");
+      logger->info("Program version: " + doc["version"].as<String>());
+      //Serial.print("Program version: ");
+      //Serial.println(doc["version"].as<String>());
+          
+      if (!doc.containsKey("program_body"))
+      {
+        logger->error("Program body not found");
+        //Serial.println("Program body not found");
+        return -1;
+      }
+
+      if (!doc["program_body"].containsKey("commands_len"))
+      {
+        logger->error("'commands_len' paramenter not found in rogram body");
+         //Serial.print("commands_len not found");
         return -1;
       }
 
@@ -127,46 +152,57 @@ class AutomaticMode: public BaseMode{
       *command_list = new Command[len_commands];
 
       for (int i = 0; i < len_commands; i++){
-        if (doc["program_body"]["commands_list"][i][0].isNull()){
-          Serial.print("Invalid command");
-          Serial.print(i);
+        if (doc["program_body"]["commands_list"][i][0].isNull())
+        {
+          logger->error("Invalid command" + String(i));
+          //Serial.print("Invalid command");
+          //Serial.print(i);
           return -1;
         }
         String name = doc["program_body"]["commands_list"][i][0];
         
         uint8_t code = get_command(&name);
 
-        if (code == 0x00){
-           Serial.print("Command not found");
-           Serial.print(i);
-            return -1;
+        if (code == 0x00)
+        {
+          logger->error("Command not found: " + String(i));
+           //Serial.print("Command not found");
+           //Serial.print(i);
+          return -1;
         }
 
-        Serial.print("Adding command: ");
-        Serial.println(name);
+        logger->debug("Adding command: " + name);
+        //Serial.print("Adding command: ");
+        //Serial.println(name);
                
         double arg1;
         double arg2;
         double arg3;
         
-        if (doc["program_body"]["commands_list"][i][1].isNull()){
+        if (doc["program_body"]["commands_list"][i][1].isNull())
+        {
           arg1 = 0;
         }
-        else{
+        else
+        {
           arg1 = doc["program_body"]["commands_list"][i][1].as<double>();
         }
         
-        if (doc["program_body"]["commands_list"][i][2].isNull()){
+        if (doc["program_body"]["commands_list"][i][2].isNull())
+        {
           arg2 = 0;
         }
-        else{
+        else
+        {
           arg2 = doc["program_body"]["commands_list"][i][2].as<double>();
         }
         
-        if (doc["program_body"]["commands_list"][i][3].isNull()){
+        if (doc["program_body"]["commands_list"][i][3].isNull())
+        {
           arg3 = 0;
         }
-        else{
+        else
+        {
           arg3 = doc["program_body"]["commands_list"][i][3].as<double>();
         }
 
@@ -181,26 +217,35 @@ class AutomaticMode: public BaseMode{
     }
     
     
-    int get_program(Command** command_list){
-      Serial.println("Initializing SD card...");
-      if (!SD.begin(sd_cs)) {
-        Serial.println("Initialization failed!");
+    int get_program(Command** command_list)
+    {
+      logger->info("Initializing SD card...");
+      //Serial.println("Initializing SD card...");
+      if (!SD.begin(sd_cs))
+      {
+        logger->error("Initialization failed!");
+        //Serial.println("Initialization failed!");
         return -1;
       }
-      Serial.println("Initialization success!");
-      Serial.println("Opening program file");
+      logger->info("Initialization success!");
+      //Serial.println("Initialization success!");
+      logger->info("Opening program file");
+      //Serial.println("Opening program file");
       File myFile = SD.open("/program.json");
-      if (myFile){
+      if (myFile)
+      {
           int commands_count = parse_json(&myFile, command_list);
-
-          if(commands_count < 1){
+          if(commands_count < 1)
+          {
             myFile.close();
             return -1;
           }
           return commands_count;
       }
-      else {
-        Serial.println("Error opening file");
+      else
+      {
+        logger->error("Error opening file");
+        //Serial.println("Error opening file");
         myFile.close();
         return -1;
       }
@@ -211,27 +256,34 @@ class AutomaticMode: public BaseMode{
       Command *command_list = nullptr;
       int commands_count = get_program(&command_list);
 
-      if (command_list == nullptr){
+      if (command_list == nullptr)
+      {
         Serial.println("NullPtr after get_program");
         return;
       }
 
-      Serial.print("Commands count: ");
-      Serial.println(commands_count);
+      logger->debug("Commands count: " + String(commands_count));
+      //Serial.print("Commands count: ");
+      //Serial.println(commands_count);
       
-      Serial.println("Running program...");
+      logger->info("Running program...");
+      //Serial.println("Running program...");
       
       
-      if (commands_count > 0){
+      if (commands_count > 0)
+      {
         int command_index = 0;
         stepper->enable();
 
         uint32_t program_start_time = micros();
-        while(command_index < commands_count){
+        while(command_index < commands_count)
+        {
           stop_btn->tick();
 
-          if (stop_btn->isPress()){
-            Serial.println("Force stopping");
+          if (stop_btn->isHold())
+          {
+            logger->info("Force stopping");
+            //Serial.println("Force stopping");
             break;
           }
 
@@ -239,57 +291,72 @@ class AutomaticMode: public BaseMode{
           uint32_t idle_start;
           uint32_t target_position;
           
-          switch (command_list[command_index].code){
+          switch (command_list[command_index].code)
+          {
             
             case 0x01:
-              if (commands_state == CommandState::CHOOSING){
-                Serial.println("Executing command UP");
+              if (commands_state == CommandState::CHOOSING)
+              {
+                logger->info("Executing command UP");
+                //Serial.println("Executing command UP");
                 stepper->set_speed(stepper->get_steps_by_mm() * command_list[command_index].arg2);
                 stepper->set_dir(1);
                 stepper->reset_current_position();
                 commands_state = CommandState::EXECUTING;
                 target_position = int (command_list[command_index].arg1) * stepper->get_steps_by_mm();
               }
-              else if (commands_state == CommandState::EXECUTING){
-                if (target_position == stepper->get_current_position()){
+              else if (commands_state == CommandState::EXECUTING)
+              {
+                if (target_position == stepper->get_current_position())
+                {
                   commands_state = CommandState::CHOOSING;
                   command_index ++;
                 }
-                else{
+                else
+                {
                   stepper->step();
                 }
               }
               break;
 
             case 0x02:
-              if (commands_state == CommandState::CHOOSING){
-                Serial.println("Executing command DOWN");
+              if (commands_state == CommandState::CHOOSING)
+              {
+                logger->info("Executing command DOWN");
+                //Serial.println("Executing command DOWN");
                 stepper->set_speed(stepper->get_steps_by_mm() * command_list[command_index].arg2);
                 stepper->set_dir(-1);
                 stepper->reset_current_position();
                 commands_state =CommandState::EXECUTING;
                 target_position = int (command_list[command_index].arg1) * stepper->get_steps_by_mm();
               }
-              else if (commands_state == CommandState::EXECUTING){
-                if (target_position == abs(stepper->get_current_position())){
+              else if (commands_state == CommandState::EXECUTING)
+              {
+                if (target_position == abs(stepper->get_current_position()))
+                {
                   commands_state = CommandState::CHOOSING;
                   command_index ++;
                 }
-                else{
+                else
+                {
                   stepper->step();
                 }
               }
               break;
           
             case 0x03:
-              if (commands_state == CommandState::CHOOSING){
-                Serial.println("Executing command IDLE");
+              if (commands_state == CommandState::CHOOSING)
+              {
+                logger->info("Executing command IDLE");
+                //Serial.println("Executing command IDLE");
                 idle_start = micros();
                 stepper->disable();
                 commands_state =CommandState::EXECUTING;
               }
-              else if (commands_state == CommandState::EXECUTING){
-                if (micros() - idle_start >= command_list[command_index].arg1){
+              else if (commands_state == CommandState::EXECUTING)
+              {
+                if (micros() - idle_start >= command_list[command_index].arg1)
+                {
                   stepper->enable();
                   commands_state = CommandState::CHOOSING;
                   command_index ++;
@@ -299,8 +366,9 @@ class AutomaticMode: public BaseMode{
           
           
         }
-        Serial.print("Program ended as: ");
-        Serial.println(micros() - program_start_time);
+        logger->info("Program ended as: " + String(micros() - program_start_time) + " us.");
+        //Serial.print("Program ended as: ");
+        //Serial.println(micros() - program_start_time);
         stepper->disable();
       
       }
@@ -308,15 +376,164 @@ class AutomaticMode: public BaseMode{
     }
 
     void stop(){
-      Serial.println("Automatic Mode Stopped");
+      logger->info("Automatic Mode Stopped");
+      //Serial.println("Automatic Mode Stopped");
     }
 
-    String get_name(){
-      return this->name;
-    }
   private:
     Stepper* stepper;
     CommandState commands_state = CommandState::CHOOSING;
 };
 
 
+enum class ManualModeState{
+  MOVING_UP,
+  MOVING_DOWN,
+  SPEED_SELECT,
+  IDLING
+};
+
+
+class ManualMode: public BaseMode{
+  public:
+    ManualMode(
+      GButton* stop_btn,
+      GButton* accept_btn,
+      GButton* down_btn,
+      GButton* up_btn,
+      LiquidCrystal_I2C* lcd,
+      String name,
+      Stepper* stepper,
+      Logger* logger
+    ): BaseMode(stop_btn, accept_btn, down_btn, up_btn, lcd, name, logger){
+      this->stepper = stepper;
+    }
+  
+  void run(){
+    stepper->enable();
+    double speed = 0.5;
+    logger->info("Manual mode running");
+
+    while(true)
+    {
+      // Тактирование кнопок
+      stop_btn->tick();
+      accept_btn->tick();
+      down_btn->tick();
+      up_btn->tick();
+
+      // Обработка событий кнопок
+      
+      if (stop_btn->isPress())
+      {  
+        if (modestate == ManualModeState::SPEED_SELECT)
+        {
+          modestate = ManualModeState::IDLING;
+          logger->info("SPEED ABORT");
+        }
+        else
+        {
+          Serial.println("Force stopping");
+          break;
+        }      
+      }
+      
+      if (up_btn->isClick())
+      {
+        if (modestate == ManualModeState::SPEED_SELECT)
+        {
+          speed += 0.1;
+          logger->info("Speed: " + String(speed));
+        }
+      }
+      
+      if (up_btn->isHold())
+      {
+        if (modestate == ManualModeState::SPEED_SELECT)
+        {
+          speed += 1;
+          logger->info("Speed: " + String(speed));
+        }
+
+        else if (modestate == ManualModeState::IDLING)
+        {
+          stepper->set_dir(1);
+          modestate = ManualModeState::MOVING_UP;
+        }  
+        else if (modestate == ManualModeState::MOVING_UP)
+        {
+          stepper->step();
+          logger->debug("Moving UP");
+        }
+      }
+      
+      if (down_btn->isClick())
+      {
+        if (modestate == ManualModeState::SPEED_SELECT)
+        {
+          speed -= 0.1;
+          if (speed < 0)
+          {
+            speed = 0;
+          }
+          logger->info("Speed: " + String(speed));
+        }
+      }
+
+      if (down_btn->isHold())
+      {
+        if (modestate == ManualModeState::SPEED_SELECT)
+        {
+          speed -= 1;
+          if (speed < 0)
+          {
+            speed = 0;
+          }
+          logger->debug("Speed: " + String(speed));
+        }
+        else if (modestate == ManualModeState::IDLING)
+        {
+          stepper->set_dir(-1);
+          modestate = ManualModeState::MOVING_DOWN;
+        }
+        else if (modestate == ManualModeState::MOVING_DOWN)
+        {
+          stepper->step();
+          logger->debug("Moving DOWN");
+        }
+      }
+
+      if (accept_btn->isClick() && modestate == ManualModeState::SPEED_SELECT)
+      {
+        stepper->set_speed_by_mm(speed);
+        logger->debug("ACCEPTING SPEED: " + String(stepper->get_speed()));
+        logger->info("SPEED SAVING");
+        modestate = ManualModeState::IDLING;
+      }
+     
+      if (accept_btn->isHolded() && modestate == ManualModeState::IDLING)
+      {
+        modestate = ManualModeState::SPEED_SELECT;
+        logger->info("SET_SPEED MODE");
+      }
+
+      if (
+          (up_btn->isRelease() && modestate == ManualModeState::MOVING_UP) || 
+          (down_btn->isRelease() && modestate == ManualModeState::MOVING_DOWN)
+         )
+      {
+        modestate = ManualModeState::IDLING;
+        logger->debug("IDLING");
+      }
+    
+    }
+
+  }
+
+  void stop(){}
+
+  private:
+    Stepper* stepper;
+    ManualModeState modestate = ManualModeState::IDLING;
+
+};
