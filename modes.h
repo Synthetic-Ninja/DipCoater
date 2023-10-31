@@ -111,39 +111,36 @@ class AutomaticMode: public BaseMode
     {
       
       logger->info("Reading from file");
-      //Serial.println("Reading from file");
+      
       String json = json_file->readString();
       DynamicJsonDocument doc(2048);
       DeserializationError error = deserializeJson(doc, json);
       if (error) {
         logger->error("Deserialize Json failed" + String(error.f_str()));
-        //Serial.println("Deserialize Json failed");
-        //Serial.println(error.f_str());
+
         return -1;
       }
 
       if (!doc.containsKey("version"))
       {
         logger->error("Version not found");
-        //Serial.println("Version not found");
+
         return -1;
       }
 
       logger->info("Program version: " + doc["version"].as<String>());
-      //Serial.print("Program version: ");
-      //Serial.println(doc["version"].as<String>());
-          
+
       if (!doc.containsKey("program_body"))
       {
         logger->error("Program body not found");
-        //Serial.println("Program body not found");
+
         return -1;
       }
 
       if (!doc["program_body"].containsKey("commands_len"))
       {
         logger->error("'commands_len' paramenter not found in rogram body");
-         //Serial.print("commands_len not found");
+
         return -1;
       }
 
@@ -155,8 +152,7 @@ class AutomaticMode: public BaseMode
         if (doc["program_body"]["commands_list"][i][0].isNull())
         {
           logger->error("Invalid command" + String(i));
-          //Serial.print("Invalid command");
-          //Serial.print(i);
+
           return -1;
         }
         String name = doc["program_body"]["commands_list"][i][0];
@@ -166,14 +162,12 @@ class AutomaticMode: public BaseMode
         if (code == 0x00)
         {
           logger->error("Command not found: " + String(i));
-           //Serial.print("Command not found");
-           //Serial.print(i);
+
           return -1;
         }
 
         logger->debug("Adding command: " + name);
-        //Serial.print("Adding command: ");
-        //Serial.println(name);
+
                
         double arg1;
         double arg2;
@@ -220,17 +214,17 @@ class AutomaticMode: public BaseMode
     int get_program(Command** command_list)
     {
       logger->info("Initializing SD card...");
-      //Serial.println("Initializing SD card...");
+
       if (!SD.begin(sd_cs))
       {
         logger->error("Initialization failed!");
-        //Serial.println("Initialization failed!");
+
         return -1;
       }
       logger->info("Initialization success!");
-      //Serial.println("Initialization success!");
+
       logger->info("Opening program file");
-      //Serial.println("Opening program file");
+
       File myFile = SD.open("/program.json");
       if (myFile)
       {
@@ -245,7 +239,6 @@ class AutomaticMode: public BaseMode
       else
       {
         logger->error("Error opening file");
-        //Serial.println("Error opening file");
         myFile.close();
         return -1;
       }
@@ -262,28 +255,24 @@ class AutomaticMode: public BaseMode
         return;
       }
 
-      logger->debug("Commands count: " + String(commands_count));
-      //Serial.print("Commands count: ");
-      //Serial.println(commands_count);
-      
+      logger->debug("Commands count: " + String(commands_count));      
       logger->info("Running program...");
-      //Serial.println("Running program...");
       
       
       if (commands_count > 0)
       {
         int command_index = 0;
         stepper->enable();
-
         uint32_t program_start_time = micros();
+        commands_state = CommandState::CHOOSING;
+      
         while(command_index < commands_count)
         {
-          stop_btn->tick();
 
           if (stop_btn->isHold())
           {
             logger->info("Force stopping");
-            //Serial.println("Force stopping");
+            stepper->disable();
             break;
           }
 
@@ -298,7 +287,6 @@ class AutomaticMode: public BaseMode
               if (commands_state == CommandState::CHOOSING)
               {
                 logger->info("Executing command UP");
-                //Serial.println("Executing command UP");
                 stepper->set_speed(stepper->get_steps_by_mm() * command_list[command_index].arg2);
                 stepper->set_dir(1);
                 stepper->reset_current_position();
@@ -323,7 +311,6 @@ class AutomaticMode: public BaseMode
               if (commands_state == CommandState::CHOOSING)
               {
                 logger->info("Executing command DOWN");
-                //Serial.println("Executing command DOWN");
                 stepper->set_speed(stepper->get_steps_by_mm() * command_list[command_index].arg2);
                 stepper->set_dir(-1);
                 stepper->reset_current_position();
@@ -348,7 +335,6 @@ class AutomaticMode: public BaseMode
               if (commands_state == CommandState::CHOOSING)
               {
                 logger->info("Executing command IDLE");
-                //Serial.println("Executing command IDLE");
                 idle_start = micros();
                 stepper->disable();
                 commands_state =CommandState::EXECUTING;
@@ -367,8 +353,6 @@ class AutomaticMode: public BaseMode
           
         }
         logger->info("Program ended as: " + String(micros() - program_start_time) + " us.");
-        //Serial.print("Program ended as: ");
-        //Serial.println(micros() - program_start_time);
         stepper->disable();
       
       }
@@ -377,7 +361,6 @@ class AutomaticMode: public BaseMode
 
     void stop(){
       logger->info("Automatic Mode Stopped");
-      //Serial.println("Automatic Mode Stopped");
     }
 
   private:
@@ -411,31 +394,34 @@ class ManualMode: public BaseMode{
   
   void run(){
     stepper->enable();
-    double speed = 0.5;
+    double speed = 1;
+    double speed_pred = speed;
+    stepper->set_speed_by_mm(speed);
+    last_speed_set = millis();
     logger->info("Manual mode running");
-
+    ManualModeState modestate = ManualModeState::IDLING;
     while(true)
     {
-      // Тактирование кнопок
-      stop_btn->tick();
-      accept_btn->tick();
-      down_btn->tick();
-      up_btn->tick();
-
+      
       // Обработка событий кнопок
+      
+      if (stop_btn->isHold())
+      {
+          stepper->disable();
+          logger->info("Force stopping");
+          break;
+            
+      }
       
       if (stop_btn->isPress())
       {  
         if (modestate == ManualModeState::SPEED_SELECT)
         {
           modestate = ManualModeState::IDLING;
+          speed = speed_pred;
           logger->info("SPEED ABORT");
-        }
-        else
-        {
-          Serial.println("Force stopping");
-          break;
-        }      
+          logger->debug("ABORTING SPEED: " + String(stepper->get_speed()));
+        } 
       }
       
       if (up_btn->isClick())
@@ -451,8 +437,7 @@ class ManualMode: public BaseMode{
       {
         if (modestate == ManualModeState::SPEED_SELECT)
         {
-          speed += 1;
-          logger->info("Speed: " + String(speed));
+          speed = calculate_speed(speed, 1);
         }
 
         else if (modestate == ManualModeState::IDLING)
@@ -484,12 +469,11 @@ class ManualMode: public BaseMode{
       {
         if (modestate == ManualModeState::SPEED_SELECT)
         {
-          speed -= 1;
+          speed = calculate_speed(speed, -1);
           if (speed < 0)
           {
             speed = 0;
           }
-          logger->debug("Speed: " + String(speed));
         }
         else if (modestate == ManualModeState::IDLING)
         {
@@ -506,14 +490,15 @@ class ManualMode: public BaseMode{
       if (accept_btn->isClick() && modestate == ManualModeState::SPEED_SELECT)
       {
         stepper->set_speed_by_mm(speed);
-        logger->debug("ACCEPTING SPEED: " + String(stepper->get_speed()));
         logger->info("SPEED SAVING");
+        logger->debug("ACCEPTING SPEED: " + String(stepper->get_speed()));
         modestate = ManualModeState::IDLING;
       }
      
       if (accept_btn->isHolded() && modestate == ManualModeState::IDLING)
       {
         modestate = ManualModeState::SPEED_SELECT;
+        speed_pred = speed;
         logger->info("SET_SPEED MODE");
       }
 
@@ -535,5 +520,23 @@ class ManualMode: public BaseMode{
   private:
     Stepper* stepper;
     ManualModeState modestate = ManualModeState::IDLING;
+    uint32_t last_speed_set;
+
+    double calculate_speed(double speed, double coef)
+    {
+      if (millis() - last_speed_set >= 500)
+      {
+        last_speed_set = millis();
+        double calculated_speed = speed + coef;
+        if (calculated_speed < 0)
+        {
+          calculated_speed = 0;
+        }
+        logger->info("Speed: " + String(calculated_speed));
+
+        return calculated_speed;
+      }
+      return speed;
+    }
 
 };
