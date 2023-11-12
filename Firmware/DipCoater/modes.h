@@ -6,8 +6,9 @@
 #include "stubs.h"
 #include "stepper.h"
 #include "logger.h"
+#include "display_modes.h"
 
-#define sd_cs 5
+#define sd_cs 4
 
 
 enum class ModeState
@@ -42,7 +43,7 @@ class BaseMode
       GButton* accept_btn,
       GButton* down_btn,
       GButton* up_btn,
-      LiquidCrystal_I2C* lcd,
+      WorkerModeMenu* tft,
       String name,
       Logger* logger
     )
@@ -51,7 +52,7 @@ class BaseMode
       this->accept_btn = accept_btn;
       this->down_btn = down_btn;
       this->up_btn = up_btn;
-      this->lcd = lcd;
+      this->tft = tft;
       state = ModeState::STOPPED;
       this->name = name;
       this->logger = logger;
@@ -65,7 +66,7 @@ class BaseMode
     GButton* accept_btn;
     GButton* down_btn;
     GButton* up_btn;
-    LiquidCrystal_I2C* lcd;
+    WorkerModeMenu* tft;
     ModeState state;
     CommandState command_state;
     String name;
@@ -81,11 +82,11 @@ class AutomaticMode: public BaseMode
       GButton* accept_btn,
       GButton* down_btn,
       GButton* up_btn,
-      LiquidCrystal_I2C* lcd,
+      WorkerModeMenu* tft,
       String name,
       Stepper* stepper,
       Logger* logger
-    ): BaseMode(stop_btn, accept_btn, down_btn, up_btn, lcd, name, logger)
+    ): BaseMode(stop_btn, accept_btn, down_btn, up_btn, tft, name, logger)
     {
       this->stepper = stepper;
     }
@@ -111,28 +112,32 @@ class AutomaticMode: public BaseMode
     {
       
       logger->info("Reading from file");
+      tft->print_positive("Reading from file");
       
       String json = json_file->readString();
       DynamicJsonDocument doc(2048);
       DeserializationError error = deserializeJson(doc, json);
       if (error) {
         logger->error("Deserialize Json failed" + String(error.f_str()));
-
+        tft->print_negative("Deserialize Json failed");
         return -1;
       }
 
       if (!doc.containsKey("version"))
       {
         logger->error("Version not found");
+        tft->print_negative("Version not found");
 
         return -1;
       }
 
       logger->info("Program version: " + doc["version"].as<String>());
+      tft->print_positive("Program version: " + doc["version"].as<String>());
 
       if (!doc.containsKey("program_body"))
       {
         logger->error("Program body not found");
+        tft->print_negative("Program body not found");
 
         return -1;
       }
@@ -140,7 +145,7 @@ class AutomaticMode: public BaseMode
       if (!doc["program_body"].containsKey("commands_len"))
       {
         logger->error("'commands_len' paramenter not found in rogram body");
-
+        tft->print_negative("'commands_len' paramenter not found in rogram body");
         return -1;
       }
 
@@ -152,7 +157,7 @@ class AutomaticMode: public BaseMode
         if (doc["program_body"]["commands_list"][i][0].isNull())
         {
           logger->error("Invalid command" + String(i));
-
+          tft->print_negative("Invalid command" + String(i));
           return -1;
         }
         String name = doc["program_body"]["commands_list"][i][0];
@@ -162,6 +167,7 @@ class AutomaticMode: public BaseMode
         if (code == 0x00)
         {
           logger->error("Command not found: " + String(i));
+          tft->print_negative("Command not found: " + String(i));
 
           return -1;
         }
@@ -214,16 +220,18 @@ class AutomaticMode: public BaseMode
     int get_program(Command** command_list)
     {
       logger->info("Initializing SD card...");
-
+      tft->print_positive("Initializing SD card");
       if (!SD.begin(sd_cs))
       {
         logger->error("Initialization failed!");
-
+        tft->print_negative("Initialization failed!");
         return -1;
       }
       logger->info("Initialization success!");
+      tft->print_positive("Initialization success!");
 
       logger->info("Opening program file");
+      tft->print_positive("Opening program file");
 
       File myFile = SD.open("/program.json");
       if (myFile)
@@ -239,19 +247,21 @@ class AutomaticMode: public BaseMode
       else
       {
         logger->error("Error opening file");
+        tft->print_negative("Error opening file");
         myFile.close();
         return -1;
       }
     }
 
     void run(){
-      Serial.println("Automatic Mode Runned...");
+      tft->render_main_screen();
       Command *command_list = nullptr;
       int commands_count = get_program(&command_list);
 
       if (command_list == nullptr)
       {
-        Serial.println("NullPtr after get_program");
+        logger->error("NullPtr after get_program");
+        stop();
         return;
       }
 
@@ -273,6 +283,7 @@ class AutomaticMode: public BaseMode
           {
             logger->info("Force stopping");
             stepper->disable();
+            tft->print_negative("FORCE STOPPED");
             break;
           }
 
@@ -287,6 +298,7 @@ class AutomaticMode: public BaseMode
               if (commands_state == CommandState::CHOOSING)
               {
                 logger->info("Executing command UP");
+                tft->print_positive("EXEC: command [" + String(command_index) + "] - UP");
                 stepper->set_speed(stepper->get_steps_by_mm() * command_list[command_index].arg2);
                 stepper->set_dir(1);
                 stepper->reset_current_position();
@@ -311,6 +323,7 @@ class AutomaticMode: public BaseMode
               if (commands_state == CommandState::CHOOSING)
               {
                 logger->info("Executing command DOWN");
+                tft->print_positive("EXEC: command [" + String(command_index) + "] - DOWN");
                 stepper->set_speed(stepper->get_steps_by_mm() * command_list[command_index].arg2);
                 stepper->set_dir(-1);
                 stepper->reset_current_position();
@@ -335,6 +348,7 @@ class AutomaticMode: public BaseMode
               if (commands_state == CommandState::CHOOSING)
               {
                 logger->info("Executing command IDLE");
+                tft->print_positive("EXEC: command [" + String(command_index) + "] - IDLE");
                 idle_start = micros();
                 stepper->disable();
                 commands_state =CommandState::EXECUTING;
@@ -353,14 +367,23 @@ class AutomaticMode: public BaseMode
           
         }
         logger->info("Program ended as: " + String(micros() - program_start_time) + " us.");
+        tft->print_positive("Program ended as: " + String(micros() - program_start_time) + " us.");
         stepper->disable();
       
       }
       delete[] command_list;
+      stop();
     }
 
     void stop(){
       logger->info("Automatic Mode Stopped");
+      while (true)
+      {
+        if (accept_btn->isClick())
+        {
+          return;
+        }
+      }
     }
 
   private:
@@ -384,11 +407,11 @@ class ManualMode: public BaseMode{
       GButton* accept_btn,
       GButton* down_btn,
       GButton* up_btn,
-      LiquidCrystal_I2C* lcd,
+      WorkerModeMenu* tft,
       String name,
       Stepper* stepper,
       Logger* logger
-    ): BaseMode(stop_btn, accept_btn, down_btn, up_btn, lcd, name, logger){
+    ): BaseMode(stop_btn, accept_btn, down_btn, up_btn, tft, name, logger){
       this->stepper = stepper;
     }
   
@@ -399,10 +422,11 @@ class ManualMode: public BaseMode{
     stepper->set_speed_by_mm(speed);
     last_speed_set = millis();
     logger->info("Manual mode running");
+    tft->render_main_screen();
+    tft->print_positive("IDLING");
     ManualModeState modestate = ManualModeState::IDLING;
     while(true)
     {
-      
       // Обработка событий кнопок
       
       if (stop_btn->isHold())
@@ -421,6 +445,7 @@ class ManualMode: public BaseMode{
           speed = speed_pred;
           logger->info("SPEED ABORT");
           logger->debug("ABORTING SPEED: " + String(stepper->get_speed()));
+          tft->print_positive("IDLING");
         } 
       }
       
@@ -430,6 +455,7 @@ class ManualMode: public BaseMode{
         {
           speed += 0.1;
           logger->info("Speed: " + String(speed));
+          tft->print_positive("SPEED: " + String(speed));
         }
       }
       
@@ -444,6 +470,7 @@ class ManualMode: public BaseMode{
         {
           stepper->set_dir(1);
           modestate = ManualModeState::MOVING_UP;
+          tft->print_positive("MOVING UP");
         }  
         else if (modestate == ManualModeState::MOVING_UP)
         {
@@ -462,6 +489,7 @@ class ManualMode: public BaseMode{
             speed = 0;
           }
           logger->info("Speed: " + String(speed));
+          tft->print_positive("SPEED: " + String(speed));
         }
       }
 
@@ -479,6 +507,7 @@ class ManualMode: public BaseMode{
         {
           stepper->set_dir(-1);
           modestate = ManualModeState::MOVING_DOWN;
+          tft->print_positive("MOVING DOWN");
         }
         else if (modestate == ManualModeState::MOVING_DOWN)
         {
@@ -493,6 +522,7 @@ class ManualMode: public BaseMode{
         logger->info("SPEED SAVING");
         logger->debug("ACCEPTING SPEED: " + String(stepper->get_speed()));
         modestate = ManualModeState::IDLING;
+        tft->print_positive("IDLING");
       }
      
       if (accept_btn->isHolded() && modestate == ManualModeState::IDLING)
@@ -500,6 +530,7 @@ class ManualMode: public BaseMode{
         modestate = ManualModeState::SPEED_SELECT;
         speed_pred = speed;
         logger->info("SET_SPEED MODE");
+        tft->print_positive("SPEED: " + String(speed));
       }
 
       if (
@@ -508,6 +539,7 @@ class ManualMode: public BaseMode{
          )
       {
         modestate = ManualModeState::IDLING;
+        tft->print_positive("IDLING");
         logger->debug("IDLING");
       }
     
@@ -533,6 +565,7 @@ class ManualMode: public BaseMode{
           calculated_speed = 0;
         }
         logger->info("Speed: " + String(calculated_speed));
+        tft->print_positive("SPEED: " + String(calculated_speed));
 
         return calculated_speed;
       }

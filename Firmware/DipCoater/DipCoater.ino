@@ -1,7 +1,12 @@
 #include <Arduino.h>
 #include <GyverButton.h>
-#include "modes.h"
 #include "logger.h"
+
+// НАСТРОЙКИ ЭКРАНА
+#define TFT_DC 2
+#define TFT_CS 5
+#define INVERTED_COLORS
+#include "display_modes.h"
 
 // НАСТРОЙКИ ДРАЙВЕРА ШАГОВИКА
 #define STEP_PIN 14
@@ -12,8 +17,11 @@
 // НАСТРОЙКИ КНОПОК
 #define STOP_BUTTON_PIN 32
 #define ACCEPT_BUTTON_PIN 33
-#define UP_BUTTON_PIN 25
-#define DOWN_BUTTON_PIN 26
+#define UP_BUTTON_PIN 26
+#define DOWN_BUTTON_PIN 25
+
+#include "modes.h"
+
 
 
 Stepper* stepper = new Stepper{STEP_PIN, DIR_PIN, ENABLE_PIN, STEPS_PER_MM, false, true};
@@ -23,29 +31,44 @@ GButton* up_btn = new GButton{UP_BUTTON_PIN};
 GButton* down_btn = new GButton{DOWN_BUTTON_PIN};
 LiquidCrystal_I2C* lcd = new LiquidCrystal_I2C;
 Logger* logger = new Logger(LoggerLevel::INFO);
+Adafruit_ST7789* tft = new Adafruit_ST7789{TFT_CS, TFT_DC, -1};
+MainDisplay* main_display = new MainDisplay{tft};
+
+
+WorkerModeMenu* authomatic_mode_menu = new WorkerModeMenu(tft, "AUTHOMATIC MODE");
+WorkerModeMenu* manual_mode_menu = new WorkerModeMenu(tft, "MANUAL MODE");
+
+struct ProgramMode
+{
+  BaseMode* mode;
+  char* name;
+  const unsigned char * bitmap;
+};
 
 
 class Program
 {
   public:
-    Program()
+    Program(ProgramMode* modes, int modes_count, MainDisplay* main_display)
     {
-      modes[0] = new AutomaticMode{stop_btn, accept_btn, down_btn, up_btn, lcd, "Automatic", stepper, logger};
-      modes[1] = new ManualMode{stop_btn, accept_btn, down_btn, up_btn, lcd, "Manual", stepper, logger};
+      this->modes = modes;
+      this->modes_count=modes_count;
+      this->main_display = main_display;
     }
 
     void run()
     {
+        render_menu();
         stepper->disable();
         while (true)
         {
           if (up_btn->isClick())
           {
-            set_mode(1);
+            set_mode(-1);
           }
           if (down_btn->isClick())
           {
-            set_mode(-1);
+            set_mode(1);
           }
           if (accept_btn->isClick())
           {
@@ -53,27 +76,63 @@ class Program
             up_btn->resetStates();
             accept_btn->resetStates();
             down_btn->resetStates();
-            modes[current_mode]->run();
+            modes[current_mode].mode->run();
+            render_menu();
           }
         }
     }
 
   private:
-    BaseMode* modes[2];
-    int8_t current_mode = 0;
-    int len_modes = 2;
+    ProgramMode* modes;
+    int modes_count;
+    int prev_mode = 0;
+    int current_mode = 1;
+    int past_mode = 2;
+    MainDisplay* main_display;
 
-    
+    void render_menu()
+    {
+      main_display->render_main_menu(main_menu_bitmap_Bitmap);
+      main_display->render_prev_item(modes[prev_mode].bitmap, modes[prev_mode].name);
+      main_display->render_current_item(modes[current_mode].bitmap, modes[current_mode].name);
+      main_display->render_past_item(modes[past_mode].bitmap, modes[past_mode].name);
+    }
+
     void set_mode(int direction)
     {
       current_mode += direction;
-      if (current_mode > (len_modes - 1)){
+      if (current_mode > modes_count)
+      {
         current_mode = 0;
       }
-      else if (this->current_mode < 0){
-        current_mode =  len_modes - 1;
+      if (current_mode < 0)
+      {
+        current_mode = modes_count;
       }
-      logger->info("Current mode is " + modes[current_mode]->get_name());
+      prev_mode = current_mode - 1;
+      if (prev_mode < 0)
+      {
+        prev_mode = modes_count;
+      }
+      if (prev_mode > modes_count)
+      {
+        prev_mode = 0;
+      }
+      past_mode = current_mode + 1;
+      if (past_mode > modes_count)
+      {
+        past_mode = 0;
+      }
+      if (past_mode < 0)
+      {
+        past_mode = modes_count;
+      }
+      
+      main_display->render_prev_item(modes[prev_mode].bitmap, modes[prev_mode].name);
+      main_display->render_current_item(modes[current_mode].bitmap, modes[current_mode].name);
+      main_display->render_past_item(modes[past_mode].bitmap, modes[past_mode].name);
+
+      logger->info("Current mode is " + String(modes[current_mode].name));
     }
     
 };
@@ -85,9 +144,34 @@ void setup()
   accept_btn->setTickMode(AUTO);
   up_btn->setTickMode(AUTO);
   down_btn->setTickMode(AUTO);
+  tft->init(240, 320);
+  tft->invertDisplay(1);
+  tft->setRotation(1);
   Serial.begin(115200);
   logger->info("I'M UP!");
-  Program program = Program();
+
+  ProgramMode authomatic = ProgramMode{
+    new AutomaticMode{stop_btn, accept_btn, down_btn, up_btn, authomatic_mode_menu, "Automatic", stepper, logger},
+    "AUTHOMATIC MODE",
+    robot_bitmap_Bitmap
+  };
+  
+  ProgramMode manual = ProgramMode{
+    new ManualMode{stop_btn, accept_btn, down_btn, up_btn, manual_mode_menu, "Manual", stepper, logger},
+    "MANUAL MODE    ",
+    hand_bitmap_Bitmap
+  };
+
+  ProgramMode connection = ProgramMode{
+    new ManualMode{stop_btn, accept_btn, down_btn, up_btn, manual_mode_menu, "Manual", stepper, logger},
+    "CONNECTION MODE",
+    connection_bitmap_Bitmap
+  };
+
+  ProgramMode program_modes[3] = {authomatic, manual, connection};
+  
+
+  Program program = Program(program_modes, 2, main_display);
   program.run();
   
 }
