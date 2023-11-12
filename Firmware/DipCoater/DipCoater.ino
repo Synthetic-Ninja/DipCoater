@@ -29,7 +29,6 @@ GButton* stop_btn = new GButton{STOP_BUTTON_PIN};
 GButton* accept_btn = new GButton{ACCEPT_BUTTON_PIN};
 GButton* up_btn = new GButton{UP_BUTTON_PIN};
 GButton* down_btn = new GButton{DOWN_BUTTON_PIN};
-LiquidCrystal_I2C* lcd = new LiquidCrystal_I2C;
 Logger* logger = new Logger(LoggerLevel::INFO);
 Adafruit_ST7789* tft = new Adafruit_ST7789{TFT_CS, TFT_DC, -1};
 MainDisplay* main_display = new MainDisplay{tft};
