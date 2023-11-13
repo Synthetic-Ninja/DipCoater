@@ -1,3 +1,4 @@
+#include <EEPROM.h>
 #include <SPI.h>
 #include <SD.h>
 #include <ArduinoJson.h>
@@ -570,5 +571,216 @@ class ManualMode: public BaseMode{
       }
       return speed;
     }
+
+};
+
+struct Settings
+{
+  uint32_t steps_per_mm;
+  uint32_t max_steps_count;
+  uint8_t stepper_mode;
+  uint8_t debug;
+};
+
+enum class ConnetionModeState
+{
+  WAITING_CONNECTION_REQUEST,
+  WAITING_ACK_BYTE,
+  CONNETION_ESTABLISHED,
+  WAITING_FIN_BYTE,
+  CONNECTION_CLOSED,
+  READY_TO_UPDATE_SETTINGS
+};
+
+class ConnetionMode: public BaseMode
+{
+  public:
+    ConnetionMode(
+      GButton* stop_btn,
+      GButton* accept_btn,
+      GButton* down_btn,
+      GButton* up_btn,
+      WorkerModeMenu* tft,
+      String name,
+      Logger* logger
+    ): BaseMode(stop_btn, accept_btn, down_btn, up_btn, tft, name, logger){
+      state = ConnetionModeState::WAITING_CONNECTION_REQUEST;
+    }
+  
+    void run()
+    
+    {
+      tft->render_main_screen();
+      tft->print_positive("Wait connection..");
+      state = ConnetionModeState::WAITING_CONNECTION_REQUEST;
+      uint8_t request_byte;
+      Settings settings = Settings();
+      int a;     
+      while (true)
+      {
+        if (state == ConnetionModeState::CONNECTION_CLOSED)
+        {
+          break;
+        }
+
+        a = Serial.available();
+        if (Serial.available() > 0)
+        {
+          switch (state)
+          {
+            case ConnetionModeState::WAITING_CONNECTION_REQUEST:
+              request_byte = Serial.read();
+              switch (request_byte)
+              {
+                case 0xF0:
+                Serial.write(0xF1);
+                Serial.flush();
+                tft->print_positive("ACK BYTE SENDED");
+                state = ConnetionModeState::WAITING_ACK_BYTE;
+                break;
+
+                default:
+                  Serial.write(0x00);
+                  Serial.flush();
+                  tft->print_negative("WRONG REQUEST BYTE");
+                  break;
+              }
+              break;
+            
+            case ConnetionModeState::WAITING_ACK_BYTE:
+              request_byte = Serial.read();
+              switch (request_byte)
+              {
+                case 0xF2:
+                  tft->print_positive("CONNETION_ESTABLISHED");
+                  state = ConnetionModeState::CONNETION_ESTABLISHED;
+                  break;
+
+                default:
+                  Serial.write(0x00);
+                  Serial.flush();
+                  tft->print_negative("WRONG ACK BYTE");
+                  break;
+              }
+              break;
+
+            case ConnetionModeState::CONNETION_ESTABLISHED:
+              request_byte = Serial.read();
+              switch (request_byte)
+              {
+              case 0x11:
+                tft->print_positive("UPDATING SETTINGS..>" + String(sizeof(Settings)));
+                state = ConnetionModeState::READY_TO_UPDATE_SETTINGS;
+                break;
+              
+              case 0x12:
+                tft->print_negative("CONNECTION CLOSED");
+                state = ConnetionModeState::CONNECTION_CLOSED;
+                break;
+
+              default:
+                tft->print_negative("UNKNOWN COMMAND");
+                break;
+              }
+              break;
+            
+            case ConnetionModeState::READY_TO_UPDATE_SETTINGS:
+              if (receive(&settings))
+              {
+                EEPROM.begin(4096);
+                EEPROM.put(0, settings);
+                EEPROM.commit();
+                tft->print_positive("Params updated. Please restart device.");
+              }
+              else
+              {
+                tft->print_negative("INVALID STRUCT");
+              }
+              state = ConnetionModeState::CONNETION_ESTABLISHED;
+              break;
+
+            default:
+              break;
+          }
+        }
+      }
+    stop();
+    }
+
+    void stop(){
+      logger->info("Automatic Mode Stopped");
+      while (true)
+      {
+        if (accept_btn->isClick())
+        {
+          return;
+        }
+      }
+    }
+
+    private:
+      ConnetionModeState state; 
+
+      bool receive(Settings* settings)
+      {
+        return (Serial.readBytes((char*)settings, sizeof(Settings)) == sizeof(Settings));
+      }
+
+};
+
+
+class InformationMode: public BaseMode
+{
+  public:
+    InformationMode(
+      GButton* stop_btn,
+      GButton* accept_btn,
+      GButton* down_btn,
+      GButton* up_btn,
+      InfoModeMenu* tft,
+      String name,
+      Logger* logger
+    ): BaseMode(stop_btn, accept_btn, down_btn, up_btn, tft, name, logger){
+      this->tft = tft;
+    }
+
+    void run()
+    {
+      tft->render_main_screen();
+      
+      Settings settings = get_settings();
+      //logger->info("SET: " + String(set1.stepper_mode));
+      //Settings settings = Settings{200, 1400, 1, 0};
+      uint8_t max_speed_mm = settings.max_steps_count / (settings.steps_per_mm * settings.stepper_mode);
+      tft->render_info(settings.steps_per_mm, max_speed_mm, settings.stepper_mode, settings.debug);
+
+      stop();
+    }
+
+    void stop()
+    {
+      logger->info("Information Mode Stopped");
+      while (true)
+      {
+        if (accept_btn->isClick())
+        {
+          return;
+        }
+      }
+
+    }
+
+
+  private:
+    InfoModeMenu* tft;
+    Settings get_settings()
+    {
+      Settings settings;
+      EEPROM.begin(4096);
+      EEPROM.get(0, settings);
+      return settings;
+    }
+    
+
 
 };

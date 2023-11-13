@@ -36,6 +36,8 @@ MainDisplay* main_display = new MainDisplay{tft};
 
 WorkerModeMenu* authomatic_mode_menu = new WorkerModeMenu(tft, "AUTHOMATIC MODE");
 WorkerModeMenu* manual_mode_menu = new WorkerModeMenu(tft, "MANUAL MODE");
+WorkerModeMenu* connection_mode_menu = new WorkerModeMenu(tft, "CONNECTION MODE");
+InfoModeMenu* information_mode_menu = new InfoModeMenu(tft, "DEVICE INFO");
 
 struct ProgramMode
 {
@@ -162,15 +164,22 @@ void setup()
   };
 
   ProgramMode connection = ProgramMode{
-    new ManualMode{stop_btn, accept_btn, down_btn, up_btn, manual_mode_menu, "Manual", stepper, logger},
+    new ConnetionMode{stop_btn, accept_btn, down_btn, up_btn, connection_mode_menu, "Connection", logger},
     "CONNECTION MODE",
     connection_bitmap_Bitmap
   };
 
-  ProgramMode program_modes[3] = {authomatic, manual, connection};
+  ProgramMode information = ProgramMode
+  {
+    new InformationMode{stop_btn, accept_btn, down_btn, up_btn, information_mode_menu, "Connection", logger},
+    "DEVICE INFO",
+    connection_bitmap_Bitmap
+  };
+
+  ProgramMode program_modes[4] = {authomatic, manual, connection, information};
   
 
-  Program program = Program(program_modes, 2, main_display);
+  Program program = Program(program_modes, 3, main_display);
   program.run();
   
 }

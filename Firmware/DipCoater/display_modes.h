@@ -36,6 +36,7 @@ class MainDisplay
         
         void render_prev_item(const unsigned char * bitmap, char * name)
         {
+        display->fillRect(10, 10, 280, 60, BLACK);
         display->drawBitmap(28, 24, bitmap, 32, 32, WHITE, BLACK);
         display->setCursor(80,35);
         display->setTextSize(2);
@@ -45,6 +46,7 @@ class MainDisplay
 
         void render_current_item(const unsigned char * bitmap, char * name)
         {
+        display->fillRect(10, 91, 280, 60, BLACK);
         display->drawBitmap(28, 105, bitmap, 32, 32, WHITE, BLACK);
         display->setCursor(80,115);
         display->setTextSize(2);
@@ -54,6 +56,7 @@ class MainDisplay
 
         void render_past_item(const unsigned char * bitmap, char * name)
         {
+        display->fillRect(10, 170, 280, 60, BLACK);
         display->drawBitmap(28, 185, bitmap, 32, 32, WHITE, BLACK);
         display->setCursor(80,195);
         display->setTextSize(2);
@@ -67,14 +70,29 @@ class MainDisplay
 };
 
 
-class WorkerModeMenu
+class BaseModeMenu
 {
     public:
-        WorkerModeMenu(Adafruit_ST7789* display, String mode_name)
-        {
-            this->display = display;
-            this->mode_name = mode_name;
-        }
+        BaseModeMenu(Adafruit_ST7789* display, String mode_name)
+            {
+                this->display = display;
+                this->mode_name = mode_name;
+            }
+    
+    protected:
+        Adafruit_ST7789* display;
+        String mode_name;
+};
+
+
+
+
+
+class WorkerModeMenu: public BaseModeMenu
+{
+    public:
+        WorkerModeMenu(Adafruit_ST7789* display, String mode_name): BaseModeMenu(display, mode_name)
+        {}
 
         void render_main_screen()
         {
@@ -91,6 +109,7 @@ class WorkerModeMenu
             uint16_t w, h;
             display->getTextBounds(text, x, y, &x1, &y1, &w, &h);
             display->setCursor((320 - w) / 2, y);
+            display->setTextSize(text_size);
             display->setTextColor(color, BLACK);
             display->print(text);
         }        
@@ -111,7 +130,40 @@ class WorkerModeMenu
             print_info_text(text, RED);
         }
 
-    private:
-        Adafruit_ST7789* display;
-        String mode_name;
+};
+
+
+class InfoModeMenu: public WorkerModeMenu
+{   
+    public:
+        InfoModeMenu(Adafruit_ST7789* display, String mode_name): WorkerModeMenu(display, mode_name)
+        {}
+        void render_main_screen()
+        {
+            display->fillScreen(BLACK);
+            display->setTextSize(2);
+            display->setTextColor(WHITE, BLACK);
+	        print_center(mode_name, 0, 20, WHITE, 2);
+        }
+
+        void render_info(uint32_t steps_per_mm, uint8_t max_speed_mm , uint8_t stepper_mode, uint8_t debug)
+        {
+	        String mode;
+            if (debug)
+            {
+                mode = "True";
+            }
+            else
+            {
+                mode = "False";
+            }
+            
+            print_center("STEPS PER MM: " + String(steps_per_mm), 0, 70, WHITE, 2);
+            print_center("STEP DIVISION: " + String(stepper_mode), 0, 100, WHITE, 2);
+            print_center("MAX SPEED: " + String(max_speed_mm) + " mm./s.", 0, 130, WHITE, 2);
+            print_center("DEBUG MODE: " + mode, 0, 160, WHITE, 2);
+            print_center("Version: alpha-0.0.1", 0, 220,  WHITE, 1);
+        }
+
+
 };
