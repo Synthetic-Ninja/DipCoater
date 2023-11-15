@@ -7,6 +7,7 @@
 #include "stepper.h"
 #include "logger.h"
 #include "display_modes.h"
+#include "components.h"
 
 #define sd_cs 4
 
@@ -413,6 +414,7 @@ class ManualMode: public BaseMode{
       Logger* logger
     ): BaseMode(stop_btn, accept_btn, down_btn, up_btn, tft, name, logger){
       this->stepper = stepper;
+      max_stepper_speed = stepper->get_max_speed_by_mm();
     }
   
   void run(){
@@ -454,6 +456,10 @@ class ManualMode: public BaseMode{
         if (modestate == ManualModeState::SPEED_SELECT)
         {
           speed += 0.1;
+          if (speed > max_stepper_speed)
+          {
+            speed = max_stepper_speed;
+          }
           logger->info("Speed: " + String(speed));
           tft->print_positive("SPEED: " + String(speed));
         }
@@ -553,6 +559,7 @@ class ManualMode: public BaseMode{
     Stepper* stepper;
     ManualModeState modestate = ManualModeState::IDLING;
     uint32_t last_speed_set;
+    double max_stepper_speed;
 
     double calculate_speed(double speed, double coef)
     {
@@ -564,6 +571,10 @@ class ManualMode: public BaseMode{
         {
           calculated_speed = 0;
         }
+        if (calculated_speed > max_stepper_speed)
+        {
+          calculated_speed = max_stepper_speed;
+        }
         logger->info("Speed: " + String(calculated_speed));
         tft->print_positive("SPEED: " + String(calculated_speed));
 
@@ -574,13 +585,6 @@ class ManualMode: public BaseMode{
 
 };
 
-struct Settings
-{
-  uint32_t steps_per_mm;
-  uint32_t max_steps_count;
-  uint8_t stepper_mode;
-  uint8_t debug;
-};
 
 enum class ConnetionModeState
 {
@@ -602,9 +606,11 @@ class ConnetionMode: public BaseMode
       GButton* up_btn,
       WorkerModeMenu* tft,
       String name,
-      Logger* logger
+      Logger* logger,
+      EepromSettings* eeprom_settings
     ): BaseMode(stop_btn, accept_btn, down_btn, up_btn, tft, name, logger){
       state = ConnetionModeState::WAITING_CONNECTION_REQUEST;
+      this->eeprom_settings = eeprom_settings;
     }
   
     void run()
@@ -687,9 +693,7 @@ class ConnetionMode: public BaseMode
             case ConnetionModeState::READY_TO_UPDATE_SETTINGS:
               if (receive(&settings))
               {
-                EEPROM.begin(4096);
-                EEPROM.put(0, settings);
-                EEPROM.commit();
+                eeprom_settings->set(settings);
                 tft->print_positive("Params updated. Please restart device.");
               }
               else
@@ -719,7 +723,8 @@ class ConnetionMode: public BaseMode
     }
 
     private:
-      ConnetionModeState state; 
+      ConnetionModeState state;
+      EepromSettings* eeprom_settings;
 
       bool receive(Settings* settings)
       {
@@ -739,20 +744,38 @@ class InformationMode: public BaseMode
       GButton* up_btn,
       InfoModeMenu* tft,
       String name,
-      Logger* logger
+      Logger* logger,
+      EepromSettings* eeprom_settings
     ): BaseMode(stop_btn, accept_btn, down_btn, up_btn, tft, name, logger){
       this->tft = tft;
+      this->eeprom_settings = eeprom_settings;
     }
 
     void run()
     {
       tft->render_main_screen();
       
-      Settings settings = get_settings();
+      Settings settings = eeprom_settings->get();
       //logger->info("SET: " + String(set1.stepper_mode));
       //Settings settings = Settings{200, 1400, 1, 0};
-      uint8_t max_speed_mm = settings.max_steps_count / (settings.steps_per_mm * settings.stepper_mode);
-      tft->render_info(settings.steps_per_mm, max_speed_mm, settings.stepper_mode, settings.debug);
+      uint8_t max_speed_mm = settings.max_steps_count / (settings.steps_per_mm * settings.driver_steps_division);
+      String log_level;
+      switch (logger->get_log_level())
+      {
+      case LoggerLevel::NO_LOG:
+        log_level = "NO_LOG";
+        break;
+      
+      case LoggerLevel::INFO:
+        log_level = "INFO";
+        break;
+
+      default:
+        log_level = "DEBUG";
+        break;
+      }
+
+      tft->render_info(settings.steps_per_mm, max_speed_mm, settings.driver_steps_division, log_level);
 
       stop();
     }
@@ -773,14 +796,6 @@ class InformationMode: public BaseMode
 
   private:
     InfoModeMenu* tft;
-    Settings get_settings()
-    {
-      Settings settings;
-      EEPROM.begin(4096);
-      EEPROM.get(0, settings);
-      return settings;
-    }
-    
-
+    EepromSettings* eeprom_settings;
 
 };

@@ -73,6 +73,12 @@ class Logger
         }
     }
 
+    LoggerLevel get_log_level()
+    {
+        return log_level;
+    }
+     
+
     private:
        LoggerLevel log_level;
 

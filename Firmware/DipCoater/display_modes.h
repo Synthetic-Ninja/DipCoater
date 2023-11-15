@@ -146,22 +146,13 @@ class InfoModeMenu: public WorkerModeMenu
 	        print_center(mode_name, 0, 20, WHITE, 2);
         }
 
-        void render_info(uint32_t steps_per_mm, uint8_t max_speed_mm , uint8_t stepper_mode, uint8_t debug)
+        void render_info(uint32_t steps_per_mm, double max_speed_mm , uint8_t stepper_mode, String log_lvl)
         {
-	        String mode;
-            if (debug)
-            {
-                mode = "True";
-            }
-            else
-            {
-                mode = "False";
-            }
-            
+	        
             print_center("STEPS PER MM: " + String(steps_per_mm), 0, 70, WHITE, 2);
             print_center("STEP DIVISION: " + String(stepper_mode), 0, 100, WHITE, 2);
             print_center("MAX SPEED: " + String(max_speed_mm) + " mm./s.", 0, 130, WHITE, 2);
-            print_center("DEBUG MODE: " + mode, 0, 160, WHITE, 2);
+            print_center("LOG LEVEL: " + log_lvl, 0, 160, WHITE, 2);
             print_center("Version: alpha-0.0.1", 0, 220,  WHITE, 1);
         }
 

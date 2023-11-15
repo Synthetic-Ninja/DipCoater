@@ -7,6 +7,7 @@ class Stepper{
       int dir_pin,
       int enable_pin,
       int steps_per_mm,
+      uint32_t max_steps_count,
       bool reverse_dir,
       bool reverse_en
       )
@@ -23,11 +24,17 @@ class Stepper{
         this->position = 0;
         this->last_step_time = micros();
         this->steps_per_mm = steps_per_mm;
+        this-> max_steps_count = max_steps_count;
     }
     
     int get_steps_by_mm()
     {
       return this->steps_per_mm;
+    }
+    
+    double get_max_speed_by_mm()
+    {
+      return max_steps_count / steps_per_mm;
     }
     
     void set_speed(int steps_per_s)
@@ -113,6 +120,7 @@ class Stepper{
     int dir_pin;
     int enable_pin;
     int steps_per_mm;
+    uint32_t max_steps_count;
     bool reverse_dir;
     bool reverse_en;
     uint32_t driver_delay;
