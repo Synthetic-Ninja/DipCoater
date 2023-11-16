@@ -1,0 +1,51 @@
+# Linters
+[tool.ruff]
+select = ["ALL"]
+line-length = 79
+ignore = [
+    "D205",     # blank-line-after-summary
+    "S101", 	# assert: Use of assert detected
+    "I001",	    # unsorted-imports: Import block is un-sorted or un-formatted
+    "ANN101",	# missing-type-self: Missing type annotation for self in method
+    "ANN204",	# missing-return-type-special-method:
+                # Missing return type annotation for special method __init__.py
+    "ANN102",   # missing-type-cls:
+                # Missing type annotation for cls in classmethod
+    "D107",	    # public-init: Missing docstring in __init__.py
+    "PLR0913",	# too-many-arguments:
+                # Too many arguments to function call ({c_args}/{max_args})
+    "UP035",    # import-replacements: Import from {module} instead:
+    "ANN401",   # any-type:
+                # Dynamically typed expressions (typing.Any) are disallowed in
+                # {name}
+    "RUF001",   # Broken rule
+    "RUF002",   # Broken rule
+    "RUF003",   # Broken rule
+    "ARG002",   # Unused method argument
+    # python3.7 compatibility
+    "UP006",    # deprecated-collection-type
+    "UP007",    # typing-union: Use X | Y for type annotations
+    "UP038",    # non-pep604-isinstance: Use X | Y in {} call instead of (X, Y) 
+    "PIE804",   # unnecessary-dict-kwargs: Unnecessary dict kwargs
+]
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F401"]
+
+[tool.ruff.pep8-naming]
+ignore-names = ["k", "v", "i", "q", "fp"]
+
+[tool.pylint."MESSAGES CONTROL"]
+disable = [
+    "unused-import",
+    "unused-argument",
+    "undefined-variable",
+    "unused-variable",
+    "too-few-public-methods",
+    "too-many-arguments",
+    "no-self-argument",
+    "invalid-name",
+    "singleton-comparison",
+    "protected-access",
+]
+
