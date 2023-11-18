@@ -24,6 +24,7 @@ enum class CommandState
 {
   CHOOSING,
   EXECUTING,
+  FAILURE,
 };
 
 
@@ -69,7 +70,7 @@ class BaseMode
     GButton* up_btn;
     WorkerModeMenu* tft;
     ModeState state;
-    CommandState command_state;
+    //CommandState command_state;
     String name;
     Logger* logger;
 };
@@ -83,6 +84,8 @@ class AutomaticMode: public BaseMode
       GButton* accept_btn,
       GButton* down_btn,
       GButton* up_btn,
+      GButton* up_limiter,
+      GButton* down_limiter,
       WorkerModeMenu* tft,
       String name,
       Stepper* stepper,
@@ -90,6 +93,8 @@ class AutomaticMode: public BaseMode
     ): BaseMode(stop_btn, accept_btn, down_btn, up_btn, tft, name, logger)
     {
       this->stepper = stepper;
+      this->up_limiter = up_limiter;
+      this->down_limiter = down_limiter;
     }
 
     uint8_t get_command(String* command_for_check)
@@ -268,7 +273,10 @@ class AutomaticMode: public BaseMode
 
       logger->debug("Commands count: " + String(commands_count));      
       logger->info("Running program...");
+      tft->print_positive("Executing Programm...");
       
+      up_limiter->resetStates();
+      down_limiter->resetStates();
       
       if (commands_count > 0)
       {
@@ -276,22 +284,30 @@ class AutomaticMode: public BaseMode
         stepper->enable();
         uint32_t program_start_time = micros();
         commands_state = CommandState::CHOOSING;
-      
+        
+        //Переменные нужные для работы режимов
+        uint32_t idle_start;
+        uint32_t target_position;
+
         while(command_index < commands_count)
         {
 
+  
           if (stop_btn->isHold())
           {
             logger->info("Force stopping");
             stepper->disable();
             tft->print_negative("FORCE STOPPED");
-            break;
+            commands_state = CommandState::FAILURE;
           }
 
-          //Переменные нужные для работы режимов
-          uint32_t idle_start;
-          uint32_t target_position;
-          
+          if (commands_state == CommandState::FAILURE)
+          {
+              logger->info("Failured");
+              break;
+          }
+      
+          logger->debug("switching to command");
           switch (command_list[command_index].code)
           {
             
@@ -315,7 +331,15 @@ class AutomaticMode: public BaseMode
                 }
                 else
                 {
-                  stepper->step();
+                  if (up_limiter->isPress() || up_limiter->isHold())
+                  {
+                    tft->print_negative("STOPPED BY UP LIMITER");
+                    commands_state = CommandState::FAILURE;
+                  }
+                  else
+                  {
+                    stepper->step();
+                  }
                 }
               }
               break;
@@ -340,7 +364,15 @@ class AutomaticMode: public BaseMode
                 }
                 else
                 {
-                  stepper->step();
+                  if (down_limiter->isPress() || down_limiter->isHold())
+                  {
+                    tft->print_negative("STOPPED BY DOWN LIMITER");
+                    commands_state = CommandState::FAILURE;
+                  }
+                  else
+                  {
+                    stepper->step();
+                  }
                 }
               }
               break;
@@ -367,10 +399,14 @@ class AutomaticMode: public BaseMode
           
           
         }
+
         logger->info("Program ended as: " + String(micros() - program_start_time) + " us.");
-        tft->print_positive("Program ended as: " + String(micros() - program_start_time) + " us.");
         stepper->disable();
-      
+        if (commands_state != CommandState::FAILURE)
+        {
+          tft->print_positive("Program ended as: " + String(micros() - program_start_time) + " us.");
+        }
+  
       }
       delete[] command_list;
       stop();
@@ -389,6 +425,8 @@ class AutomaticMode: public BaseMode
 
   private:
     Stepper* stepper;
+    GButton* up_limiter;
+    GButton* down_limiter;
     CommandState commands_state = CommandState::CHOOSING;
 };
 
@@ -397,7 +435,9 @@ enum class ManualModeState{
   MOVING_UP,
   MOVING_DOWN,
   SPEED_SELECT,
-  IDLING
+  IDLING,
+  LIMITED_UP,
+  LIMITED_DOWN
 };
 
 
@@ -408,16 +448,21 @@ class ManualMode: public BaseMode{
       GButton* accept_btn,
       GButton* down_btn,
       GButton* up_btn,
+      GButton* up_limiter,
+      GButton* down_limiter,
       WorkerModeMenu* tft,
       String name,
       Stepper* stepper,
       Logger* logger
     ): BaseMode(stop_btn, accept_btn, down_btn, up_btn, tft, name, logger){
+      this->up_limiter = up_limiter;
+      this->down_limiter = down_limiter;
       this->stepper = stepper;
       max_stepper_speed = stepper->get_max_speed_by_mm();
     }
-  
   void run(){
+    up_limiter->resetStates();
+    down_limiter->resetStates();
     stepper->enable();
     double speed = 1;
     double speed_pred = speed;
@@ -451,6 +496,18 @@ class ManualMode: public BaseMode{
         } 
       }
       
+      if ((up_limiter->isPress() || up_limiter->isHold()) && modestate == ManualModeState::MOVING_UP)
+      {
+        modestate = ManualModeState::LIMITED_UP;
+        tft->print_negative("LIMITED UP");
+      }
+
+      if ((down_limiter->isPress() || down_limiter->isHold()) && modestate == ManualModeState::MOVING_DOWN)
+      {
+        modestate = ManualModeState::LIMITED_DOWN;
+        tft->print_negative("LIMITED DOWN");
+      }
+      
       if (up_btn->isClick())
       {
         if (modestate == ManualModeState::SPEED_SELECT)
@@ -472,7 +529,7 @@ class ManualMode: public BaseMode{
           speed = calculate_speed(speed, 1);
         }
 
-        else if (modestate == ManualModeState::IDLING)
+        else if (modestate == ManualModeState::IDLING || modestate == ManualModeState::LIMITED_DOWN)
         {
           stepper->set_dir(1);
           modestate = ManualModeState::MOVING_UP;
@@ -509,7 +566,7 @@ class ManualMode: public BaseMode{
             speed = 0;
           }
         }
-        else if (modestate == ManualModeState::IDLING)
+        else if (modestate == ManualModeState::IDLING || modestate == ManualModeState::LIMITED_UP)
         {
           stepper->set_dir(-1);
           modestate = ManualModeState::MOVING_DOWN;
@@ -559,6 +616,8 @@ class ManualMode: public BaseMode{
     Stepper* stepper;
     ManualModeState modestate = ManualModeState::IDLING;
     uint32_t last_speed_set;
+    GButton* up_limiter;
+    GButton* down_limiter;
     double max_stepper_speed;
 
     double calculate_speed(double speed, double coef)

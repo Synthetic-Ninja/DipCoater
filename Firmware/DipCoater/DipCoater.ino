@@ -18,6 +18,8 @@
 #define ACCEPT_BUTTON_PIN 33
 #define UP_BUTTON_PIN 26
 #define DOWN_BUTTON_PIN 25
+#define UP_LIMITER_PIN 35
+#define DOWN_LIMITER_PIN 34
 
 #include "logger.h"
 #include "modes.h"
@@ -199,10 +201,15 @@ void setup()
   GButton* accept_btn = new GButton{ACCEPT_BUTTON_PIN};
   GButton* up_btn = new GButton{UP_BUTTON_PIN};
   GButton* down_btn = new GButton{DOWN_BUTTON_PIN};
+  GButton* up_limiter = new GButton{UP_LIMITER_PIN};
+  GButton* down_limiter = new GButton{DOWN_LIMITER_PIN};
+
   stop_btn->setTickMode(AUTO);
   accept_btn->setTickMode(AUTO);
   up_btn->setTickMode(AUTO);
   down_btn->setTickMode(AUTO);
+  up_limiter->setTickMode(AUTO);
+  down_limiter->setTickMode(AUTO);
   logger->debug("Buttons configured");
   
   // Настройка дисплея
@@ -240,13 +247,13 @@ void setup()
   
   // Создание структур с программными режимами
   ProgramMode authomatic = ProgramMode{
-    new AutomaticMode{stop_btn, accept_btn, down_btn, up_btn, authomatic_mode_menu, "Automatic", stepper, logger},
+    new AutomaticMode{stop_btn, accept_btn, down_btn, up_btn, up_limiter, down_limiter, authomatic_mode_menu, "Automatic", stepper, logger},
     "AUTHOMATIC MODE",
     robot_bitmap_Bitmap
   };
   
   ProgramMode manual = ProgramMode{
-    new ManualMode{stop_btn, accept_btn, down_btn, up_btn, manual_mode_menu, "Manual", stepper, logger},
+    new ManualMode{stop_btn, accept_btn, down_btn, up_btn, up_limiter, down_limiter, manual_mode_menu, "Manual", stepper, logger},
     "MANUAL MODE",
     hand_bitmap_Bitmap
   };
