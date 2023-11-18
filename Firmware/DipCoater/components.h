@@ -15,6 +15,8 @@ struct Settings
   uint32_t steps_per_mm;
   uint32_t max_steps_count;
   uint8_t driver_steps_division;
+  uint8_t driver_invert_direction;
+  uint8_t driver_invert_enable;
   uint8_t log_level;
 };
 
@@ -23,8 +25,16 @@ class EepromSettings
 
     public:
         EepromSettings()
-        {
-            default_settings = Settings{300, 700, 1, 0};
+        {   
+            /*
+                Дефолтные параметры:
+                -300 шагов в секунду 
+                - Максимальная скорость 7 мм в секунду 
+                - Направление не инвертировано
+                - Включение не инвертировано
+                - Уровень логирования NO_LOG
+            */ 
+            default_settings = Settings{300, 700, 1, 0, 0, 0}; 
         }
         
         bool is_default(){

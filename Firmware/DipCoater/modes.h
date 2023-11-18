@@ -70,7 +70,6 @@ class BaseMode
     GButton* up_btn;
     WorkerModeMenu* tft;
     ModeState state;
-    //CommandState command_state;
     String name;
     Logger* logger;
 };

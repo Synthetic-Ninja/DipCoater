@@ -230,8 +230,8 @@ void setup()
     ENABLE_PIN,
     settings_struct.steps_per_mm * settings_struct.driver_steps_division,
     settings_struct.max_steps_count,
-    false,
-    true
+    settings_struct.driver_invert_direction,
+    settings_struct.driver_invert_enable
     );
 
     logger->debug("Max_speed_mm: " +  String(stepper->get_max_speed_by_mm()));
