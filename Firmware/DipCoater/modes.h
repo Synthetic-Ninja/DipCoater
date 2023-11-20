@@ -245,8 +245,11 @@ class AutomaticMode: public BaseMode
           if(commands_count < 1)
           {
             myFile.close();
+            SD.end();
             return -1;
           }
+          myFile.close();
+          SD.end();
           return commands_count;
       }
       else
@@ -254,6 +257,7 @@ class AutomaticMode: public BaseMode
         logger->error("Error opening file");
         tft->print_negative("Error opening file");
         myFile.close();
+        SD.end();
         return -1;
       }
     }
