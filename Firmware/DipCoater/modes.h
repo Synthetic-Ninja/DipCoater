@@ -147,75 +147,109 @@ class AutomaticMode: public BaseMode
         return -1;
       }
 
-      if (!doc["program_body"].containsKey("commands_len"))
+      JsonObject programBody = doc["program_body"];
+      
+      if (!programBody.containsKey("commands_len"))
       {
         logger->error("'commands_len' paramenter not found in rogram body");
         tft->print_negative("'commands_len' paramenter not found in rogram body");
         return -1;
       }
 
-      int len_commands = doc["program_body"]["commands_len"];
+      int len_commands = programBody["commands_len"];
+
+      if (!programBody.containsKey("commands_list"))
+      {
+        logger->error("'commands_list' paramenter not found in program body");
+        tft->print_negative("'commands_list' paramenter not found in rogram body");
+        return -1;
+      }
 
       *command_list = new Command[len_commands];
-
-      for (int i = 0; i < len_commands; i++){
-        if (doc["program_body"]["commands_list"][i][0].isNull())
-        {
-          logger->error("Invalid command" + String(i));
-          tft->print_negative("Invalid command" + String(i));
-          return -1;
-        }
-        String name = doc["program_body"]["commands_list"][i][0];
+      JsonArray json_command_list = programBody["commands_list"];
+      int command_counter = 0;
+      for (JsonObject command: json_command_list)
+      {
         
-        uint8_t code = get_command(&name);
+        if (!command.containsKey("command"))
+        {
+         tft->print_negative("Command name not found in command: " + String(command_counter));
+         logger->error("Command name not found in command: " + String(command_counter));
+         return -1;
+        }
 
+        String command_name = command["command"];
+        
+        // Получаем доступный код если он найден
+        uint8_t code = get_command(&command_name);
+
+        // Проверем что код найден иначе ошибка
         if (code == 0x00)
         {
-          logger->error("Command not found: " + String(i));
-          tft->print_negative("Command not found: " + String(i));
-
+          logger->error("Command not found: " + String(command_counter));
+          tft->print_negative("Command not found: " + String(command_counter));
           return -1;
         }
 
-        logger->debug("Adding command: " + name);
+        if (!command.containsKey("args")){
+          logger->error("'args' not found in command: " + String(command_counter));
+          tft->print_negative("'args' not found in command: " + String(command_counter));
+          return -1;
+        }
 
-               
+        // Добавляем аргументы из списка args
+
         double arg1;
         double arg2;
         double arg3;
         
-        if (doc["program_body"]["commands_list"][i][1].isNull())
+        // Первый аргумент
+
+        if (command["args"][0].isNull())
         {
           arg1 = 0;
         }
         else
         {
-          arg1 = doc["program_body"]["commands_list"][i][1].as<double>();
+          arg1 = command["args"][0].as<double>();
         }
-        
-        if (doc["program_body"]["commands_list"][i][2].isNull())
+
+        // Второй аргумент
+
+        if (command["args"][1].isNull())
         {
           arg2 = 0;
         }
         else
         {
-          arg2 = doc["program_body"]["commands_list"][i][2].as<double>();
+          arg2 = command["args"][1].as<double>();
         }
-        
-        if (doc["program_body"]["commands_list"][i][3].isNull())
+
+        // Третий аргумент
+
+        if (command["args"][2].isNull())
         {
           arg3 = 0;
         }
         else
         {
-          arg3 = doc["program_body"]["commands_list"][i][3].as<double>();
+          arg3 = command["args"][2].as<double>();
         }
 
-        (*command_list)[i].code = code;
-        (*command_list)[i].arg1 = arg1;
-        (*command_list)[i].arg2 = arg2;
-        (*command_list)[i].arg3 = arg3;
+        
+        (*command_list)[command_counter].code = code;
+        (*command_list)[command_counter].arg1 = arg1;
+        (*command_list)[command_counter].arg2 = arg2;
+        (*command_list)[command_counter].arg3 = arg3;
 
+        command_counter++;
+
+      }
+      
+      if (command_counter != len_commands){
+        logger->error("Commands count != len_commands");
+        tft->print_negative("Commands count != len_commands");
+        return -1;
       }
 
       return len_commands;
@@ -275,14 +309,14 @@ class AutomaticMode: public BaseMode
       }
 
       logger->debug("Commands count: " + String(commands_count));      
-      logger->info("Running program...");
-      tft->print_positive("Executing Programm...");
       
       up_limiter->resetStates();
       down_limiter->resetStates();
       
       if (commands_count > 0)
       {
+        logger->info("Running program...");
+        tft->print_positive("Executing Programm...");
         int command_index = 0;
         stepper->enable();
         uint32_t program_start_time = micros();
@@ -407,7 +441,7 @@ class AutomaticMode: public BaseMode
         stepper->disable();
         if (commands_state != CommandState::FAILURE)
         {
-          tft->print_positive("Program ended as: " + String(micros() - program_start_time) + " us.");
+          tft->print_positive("PROGRAM ENDED");
         }
   
       }
