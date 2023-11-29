@@ -272,7 +272,38 @@ class AutomaticMode: public BaseMode
       logger->info("Opening program file");
       tft->print_positive("Opening program file");
 
-      File myFile = SD.open("/program.json");
+      File root = SD.open("/");
+      String program_filename = "None";
+      String filename;
+
+      while(true)
+      {
+        File entry =  root.openNextFile();
+        if (!entry)
+        {
+          // Нет больше файлов
+          break;
+        }
+
+        if (!entry.isDirectory())
+        {
+          filename = entry.name();
+          if (filename.endsWith(".json"))
+          {
+            program_filename = filename;
+          }
+        }
+        entry.close();
+      }
+      root.close();
+      
+      if (program_filename == "None"){
+        logger->error(".json not found");
+        tft->print_negative(".json not found");
+        return -1;
+      }
+
+      File myFile = SD.open(program_filename);
       if (myFile)
       {
           int commands_count = parse_json(&myFile, command_list);
