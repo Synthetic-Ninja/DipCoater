@@ -82,19 +82,25 @@ class UartConnector:
             raise RuntimeError("Ошибка открытия serial")
         self.logger.info('Serial opened...')
         self.serial_port.reset_input_buffer()
-        self.logger.info('Sending SYN')
-        self.logger.info('Waiting ACK byte from device')
-        return
+        self.logger.info('Waiting device')
         while True:
-            self.serial_port.write(bytes.fromhex('F0'))
-            for i in range(10000):
-                if self.serial_port.in_waiting > 0:
-                    raw_byte = self.serial_port.read()
-                    if raw_byte == bytes.fromhex('F1'):
-                        self.logger.info('ACK byte received')
-                        self.serial_port.write(bytes.fromhex('F2'))
-                        self.connection = True
-                        self.logger.success('Connection established')
+            if self.serial_port.in_waiting > 0:
+                raw_byte = self.serial_port.read()
+                if raw_byte == bytes.fromhex('F5'):
+                    break
+
+        self.logger.info('Sending SYN')
+        self.serial_port.reset_input_buffer()
+        self.serial_port.write(bytes.fromhex('F0'))
+        self.logger.info('Waiting ACK byte from device')
+        while True:
+            if self.serial_port.in_waiting > 0:
+                raw_byte = self.serial_port.read()
+                if raw_byte == bytes.fromhex('F1'):
+                    self.logger.info('ACK byte received')
+                    self.serial_port.write(bytes.fromhex('F2'))
+                    self.connection = True
+                    self.logger.success('Connection established')
                     return
 
     def load_settings(self, settings: Settings) -> None:

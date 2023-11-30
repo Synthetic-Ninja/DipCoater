@@ -358,7 +358,7 @@ class MyWindow(QtWidgets.QMainWindow):
 
         steps_per_mm = int(steps_per_mm)
         driver_steps_division = int(driver_steps_division)
-        max_speed = int(max_speed)
+        max_speed = float(max_speed)
 
         max_steps_count = math.floor(
             max_speed
@@ -366,6 +366,7 @@ class MyWindow(QtWidgets.QMainWindow):
             * driver_steps_division
         )
 
+        print(max_steps_count)
         settings = Settings(
             steps_per_mm=steps_per_mm,
             max_steps_count=max_steps_count,
