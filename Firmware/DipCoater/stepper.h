@@ -32,9 +32,9 @@ class Stepper{
       return this->steps_per_mm;
     }
     
-    double get_max_speed_by_mm()
+    float get_max_speed_by_mm()
     {
-      return max_steps_count / steps_per_mm;
+      return float(max_steps_count) / steps_per_mm;
     }
     
     void set_speed(int steps_per_s)

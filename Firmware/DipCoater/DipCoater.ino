@@ -234,6 +234,10 @@ void setup()
     settings_struct.driver_invert_enable
     );
 
+    logger->debug("steps_per_mm: " + String(settings_struct.steps_per_mm));
+    logger->debug("steps_division: " + String(settings_struct.driver_steps_division));
+    logger->debug("max_steps_count: " + String(settings_struct.max_steps_count));
+    
     logger->debug("Max_speed_mm: " +  String(stepper->get_max_speed_by_mm()));
 
   

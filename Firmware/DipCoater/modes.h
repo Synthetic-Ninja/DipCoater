@@ -686,7 +686,7 @@ class ManualMode: public BaseMode{
     uint32_t last_speed_set;
     GButton* up_limiter;
     GButton* down_limiter;
-    double max_stepper_speed;
+    float max_stepper_speed;
 
     double calculate_speed(double speed, double coef)
     {
@@ -748,7 +748,8 @@ class ConnetionMode: public BaseMode
       state = ConnetionModeState::WAITING_CONNECTION_REQUEST;
       uint8_t request_byte;
       Settings settings = Settings();
-      int a;     
+      int a;
+      uint32_t timer = millis();     
       while (true)
       {
         if (state == ConnetionModeState::CONNECTION_CLOSED)
@@ -834,6 +835,12 @@ class ConnetionMode: public BaseMode
               break;
           }
         }
+        if (millis() - timer > 500 && state == ConnetionModeState::WAITING_CONNECTION_REQUEST)
+        {
+          Serial.write(0xF5);
+          Serial.flush();
+          timer = millis();
+        }
       }
     stop();
     }
@@ -885,7 +892,7 @@ class InformationMode: public BaseMode
       Settings settings = eeprom_settings->get();
       //logger->info("SET: " + String(set1.stepper_mode));
       //Settings settings = Settings{200, 1400, 1, 0};
-      uint8_t max_speed_mm = settings.max_steps_count / (settings.steps_per_mm * settings.driver_steps_division);
+      float max_speed_mm = float(settings.max_steps_count) / (settings.steps_per_mm * settings.driver_steps_division);
       String log_level;
       switch (logger->get_log_level())
       {
