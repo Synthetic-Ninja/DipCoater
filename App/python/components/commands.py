@@ -37,7 +37,7 @@ class BaseCommand(QtWidgets.QFrame):
 
         pushButton.setText("")
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("ui/icons/close.png"),
+        icon.addPixmap(QtGui.QPixmap("../../ui/icons/close.png"),
                        QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
         pushButton.setIcon(icon)
         pushButton.setIconSize(QtCore.QSize(10, 10))

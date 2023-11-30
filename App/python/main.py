@@ -1,17 +1,21 @@
 import os.path
 import sys
 import json.decoder
+import math
+
 import marshmallow.exceptions
 from PyQt6 import QtWidgets
-from PyQt6 import QtCore
 from PyQt6.QtCore import QSize
 
 from output import Ui_MainWindow
-from schemas import ProgramSchema
-from schemas import Program
-from commands import CommandIdleUS
-from commands import CommandUP
-from commands import CommandDown
+from python.schemas.schemas import ProgramSchema
+from python.schemas.schemas import Program
+from python.components.commands import CommandIdleUS
+from python.components.commands import CommandUP
+from python.components.commands import CommandDown
+from python.components.gui_logger import GuiLogger
+from python.components.uart import UartConnector
+from python.components.uart import Settings
 
 
 class MyWindow(QtWidgets.QMainWindow):
@@ -33,6 +37,13 @@ class MyWindow(QtWidgets.QMainWindow):
         self.program: dict = {}
 
         self.ui.listWidget.setVerticalScrollBar(self.ui.verticalScrollBar)
+
+        # LOGGER FOR TEXT BROWSER
+        self.ui_logger = GuiLogger(self.ui.textBrowser)
+
+        #UART
+        self.uart = UartConnector(self.ui_logger)
+
 
     @staticmethod
     def _button_handler(
@@ -106,6 +117,12 @@ class MyWindow(QtWidgets.QMainWindow):
 
         # BINDING ADD COMMAND
         self.ui.AddCommandBtn.clicked.connect(self.add_command_handle)
+
+        # BINDING CONNECT BUTTONS
+        self.ui.ConnectBtn.clicked.connect(self.handle_connect)
+
+        #BINDING LOAD PROGRAM TO DEVICE BTN
+        self.ui.UploadToDeviceBtn.clicked.connect(self.handle_save_settings)
 
     def _go_to_page(self, page: QtWidgets.QWidget) -> None:
         self.ui.stackedWidget.setCurrentWidget(page)
@@ -308,6 +325,57 @@ class MyWindow(QtWidgets.QMainWindow):
         self.program_file_path = file_path
         file_name = '/'.join(file_path.split('/')[-2:])
         self.ui.ProgramFileNameLabel.setText(file_name)
+
+    def handle_connect(self) -> None:
+        try:
+            self.uart.make_connection('/dev/tty.usbserial-0001')
+        except RuntimeError as e:
+            self._raise_error(str(e))
+
+    def handle_save_settings(self) -> None:
+        if not (steps_per_mm := self.ui.CountOfStepsEdit.text()):
+            self._raise_error("Параметр 'Количество шагов' не определен")
+            return
+
+        if not (driver_steps_division := self.ui.StepsDivisionEdit.text()):
+            self._raise_error("Параметр 'Деление шага' не определен")
+            return
+
+        if not (max_speed := self.ui.MaxSpeedEdit.text()):
+            self._raise_error("Параметр 'Максимальная скорость' не определен")
+            return
+
+        log_param = 0
+        match self.ui.LoggerComboBox.currentText():
+            case 'NO_LOG':
+                log_param = 0
+
+            case 'INFO':
+                log_param = 1
+
+            case 'DEBUG':
+                log_param = 2
+
+        steps_per_mm = int(steps_per_mm)
+        driver_steps_division = int(driver_steps_division)
+        max_speed = int(max_speed)
+
+        max_steps_count = math.floor(
+            max_speed
+            * steps_per_mm
+            * driver_steps_division
+        )
+
+        settings = Settings(
+            steps_per_mm=steps_per_mm,
+            max_steps_count=max_steps_count,
+            driver_steps_division=driver_steps_division,
+            invert_direction=1,
+            invert_enable=1,
+            debug=log_param,
+        )
+
+        self.uart.load_settings(settings)
 
 
 def main():

@@ -1,4 +1,4 @@
-# Form implementation generated from reading ui file 'ui/qt_render.ui'
+# Form implementation generated from reading ui file '../ui/qt_render.ui'
 #
 # Created by: PyQt6 UI code generator 6.4.2
 #
@@ -229,7 +229,7 @@ class Ui_MainWindow(object):
 "}")
         self.UploudFileBtn.setText("")
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("ui/icons/arrow-up-32.png"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        icon.addPixmap(QtGui.QPixmap("../ui/icons/arrow-up-32.png"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
         self.UploudFileBtn.setIcon(icon)
         self.UploudFileBtn.setCheckable(True)
         self.UploudFileBtn.setObjectName("UploudFileBtn")
@@ -271,22 +271,22 @@ class Ui_MainWindow(object):
         self.label_13 = QtWidgets.QLabel(parent=self.frame_3)
         self.label_13.setGeometry(QtCore.QRect(20, 180, 141, 20))
         self.label_13.setObjectName("label_13")
-        self.load_from_device_btn = QtWidgets.QPushButton(parent=self.frame_3)
-        self.load_from_device_btn.setGeometry(QtCore.QRect(70, 230, 91, 31))
-        self.load_from_device_btn.setStyleSheet("QPushButton{\n"
+        self.LoadFromDeviceBtn = QtWidgets.QPushButton(parent=self.frame_3)
+        self.LoadFromDeviceBtn.setGeometry(QtCore.QRect(70, 230, 91, 31))
+        self.LoadFromDeviceBtn.setStyleSheet("QPushButton{\n"
 "background-color: rgb(182, 149, 243);\n"
 "border-color: rgb(182, 149, 243);\n"
 "border-radius: 10px;\n"
 "}")
-        self.load_from_device_btn.setObjectName("load_from_device_btn")
-        self.load_to_device_btn = QtWidgets.QPushButton(parent=self.frame_3)
-        self.load_to_device_btn.setGeometry(QtCore.QRect(180, 230, 91, 31))
-        self.load_to_device_btn.setStyleSheet("QPushButton{\n"
+        self.LoadFromDeviceBtn.setObjectName("LoadFromDeviceBtn")
+        self.UploadToDeviceBtn = QtWidgets.QPushButton(parent=self.frame_3)
+        self.UploadToDeviceBtn.setGeometry(QtCore.QRect(180, 230, 91, 31))
+        self.UploadToDeviceBtn.setStyleSheet("QPushButton{\n"
 "background-color: rgb(182, 149, 243);\n"
 "border-color: rgb(182, 149, 243);\n"
 "border-radius: 10px;\n"
 "}")
-        self.load_to_device_btn.setObjectName("load_to_device_btn")
+        self.UploadToDeviceBtn.setObjectName("UploadToDeviceBtn")
         self.label_14 = QtWidgets.QLabel(parent=self.frame_3)
         self.label_14.setGeometry(QtCore.QRect(20, 20, 131, 31))
         self.label_14.setObjectName("label_14")
@@ -297,56 +297,26 @@ class Ui_MainWindow(object):
         self.label_16 = QtWidgets.QLabel(parent=self.frame_3)
         self.label_16.setGeometry(QtCore.QRect(350, 120, 31, 31))
         self.label_16.setObjectName("label_16")
-        self.logget_combo_box = QtWidgets.QComboBox(parent=self.frame_3)
-        self.logget_combo_box.setGeometry(QtCore.QRect(180, 180, 161, 22))
-        self.logget_combo_box.setStyleSheet("QComboBox{\n"
+        self.LoggerComboBox = QtWidgets.QComboBox(parent=self.frame_3)
+        self.LoggerComboBox.setGeometry(QtCore.QRect(180, 180, 161, 22))
+        self.LoggerComboBox.setStyleSheet("QComboBox{\n"
 "background-color: rgb(38, 40, 60);\n"
 "border: 1px solid;\n"
 "border-color: rgb(182, 149, 244); \n"
 "}")
-        self.logget_combo_box.setObjectName("logget_combo_box")
-        self.logget_combo_box.addItem("")
-        self.logget_combo_box.addItem("")
-        self.logget_combo_box.addItem("")
-        self.count_of_steps_edit = QtWidgets.QTextEdit(parent=self.frame_3)
-        self.count_of_steps_edit.setGeometry(QtCore.QRect(180, 20, 161, 31))
-        self.count_of_steps_edit.setStyleSheet("QTextEdit{\n"
-"background-color: rgba(37, 39, 61, 240);\n"
-"border: 1px solid;\n"
-"border-color: rgb(182, 149, 243);\n"
-"}\n"
-"\n"
-"")
-        self.count_of_steps_edit.setObjectName("count_of_steps_edit")
+        self.LoggerComboBox.setObjectName("LoggerComboBox")
+        self.LoggerComboBox.addItem("")
+        self.LoggerComboBox.addItem("")
+        self.LoggerComboBox.addItem("")
         self.label_17 = QtWidgets.QLabel(parent=self.frame_3)
         self.label_17.setGeometry(QtCore.QRect(350, 20, 31, 31))
         self.label_17.setObjectName("label_17")
-        self.step_division_edit = QtWidgets.QTextEdit(parent=self.frame_3)
-        self.step_division_edit.setGeometry(QtCore.QRect(180, 70, 161, 31))
-        self.step_division_edit.setStyleSheet("QTextEdit{\n"
-"background-color: rgba(37, 39, 61, 240);\n"
-"border: 1px solid;\n"
-"border-color: rgb(182, 149, 243);\n"
-"}\n"
-"\n"
-"")
-        self.step_division_edit.setObjectName("step_division_edit")
         self.label_18 = QtWidgets.QLabel(parent=self.frame_3)
         self.label_18.setGeometry(QtCore.QRect(20, 70, 131, 31))
         self.label_18.setObjectName("label_18")
         self.label_19 = QtWidgets.QLabel(parent=self.frame_3)
         self.label_19.setGeometry(QtCore.QRect(20, 120, 161, 31))
         self.label_19.setObjectName("label_19")
-        self.max_speed_edit = QtWidgets.QTextEdit(parent=self.frame_3)
-        self.max_speed_edit.setGeometry(QtCore.QRect(180, 120, 161, 31))
-        self.max_speed_edit.setStyleSheet("QTextEdit{\n"
-"background-color: rgba(37, 39, 61, 240);\n"
-"border: 1px solid;\n"
-"border-color: rgb(182, 149, 243);\n"
-"}\n"
-"\n"
-"")
-        self.max_speed_edit.setObjectName("max_speed_edit")
         self.frame_4 = QtWidgets.QFrame(parent=self.frame_3)
         self.frame_4.setGeometry(QtCore.QRect(410, 20, 221, 241))
         self.frame_4.setStyleSheet("QFrame{\n"
@@ -369,34 +339,64 @@ class Ui_MainWindow(object):
         self.device_program_version.setGeometry(QtCore.QRect(140, 50, 71, 21))
         self.device_program_version.setText("")
         self.device_program_version.setObjectName("device_program_version")
+        self.CountOfStepsEdit = QtWidgets.QLineEdit(parent=self.frame_3)
+        self.CountOfStepsEdit.setGeometry(QtCore.QRect(180, 20, 161, 31))
+        self.CountOfStepsEdit.setStyleSheet("QLineEdit{\n"
+"background-color: rgba(37, 39, 61, 240);\n"
+"border: 1px solid;\n"
+"border-color: rgb(182, 149, 243);\n"
+"}\n"
+"\n"
+"")
+        self.CountOfStepsEdit.setObjectName("CountOfStepsEdit")
+        self.StepsDivisionEdit = QtWidgets.QLineEdit(parent=self.frame_3)
+        self.StepsDivisionEdit.setGeometry(QtCore.QRect(180, 70, 161, 31))
+        self.StepsDivisionEdit.setStyleSheet("QLineEdit{\n"
+"background-color: rgba(37, 39, 61, 240);\n"
+"border: 1px solid;\n"
+"border-color: rgb(182, 149, 243);\n"
+"}\n"
+"\n"
+"")
+        self.StepsDivisionEdit.setObjectName("StepsDivisionEdit")
+        self.MaxSpeedEdit = QtWidgets.QLineEdit(parent=self.frame_3)
+        self.MaxSpeedEdit.setGeometry(QtCore.QRect(180, 120, 161, 31))
+        self.MaxSpeedEdit.setStyleSheet("QLineEdit{\n"
+"background-color: rgba(37, 39, 61, 240);\n"
+"border: 1px solid;\n"
+"border-color: rgb(182, 149, 243);\n"
+"}\n"
+"\n"
+"")
+        self.MaxSpeedEdit.setObjectName("MaxSpeedEdit")
         self.widget_3 = QtWidgets.QWidget(parent=self.device_configuration_page)
         self.widget_3.setGeometry(QtCore.QRect(10, 550, 641, 61))
         self.widget_3.setStyleSheet("background-color: rgb(45, 49, 58);")
         self.widget_3.setObjectName("widget_3")
-        self.connect_btn = QtWidgets.QPushButton(parent=self.widget_3)
-        self.connect_btn.setGeometry(QtCore.QRect(400, 10, 131, 41))
-        self.connect_btn.setStyleSheet("QPushButton{\n"
+        self.ConnectBtn = QtWidgets.QPushButton(parent=self.widget_3)
+        self.ConnectBtn.setGeometry(QtCore.QRect(400, 10, 131, 41))
+        self.ConnectBtn.setStyleSheet("QPushButton{\n"
 "background-color: rgb(182, 149, 243);\n"
 "border-color: rgb(182, 149, 243);\n"
 "border-radius: 10px;\n"
 "}")
-        self.connect_btn.setObjectName("connect_btn")
-        self.connect_file_upload = QtWidgets.QPushButton(parent=self.widget_3)
-        self.connect_file_upload.setGeometry(QtCore.QRect(270, 10, 51, 41))
-        self.connect_file_upload.setStyleSheet("QPushButton{\n"
+        self.ConnectBtn.setObjectName("ConnectBtn")
+        self.ConnectFileUpload = QtWidgets.QPushButton(parent=self.widget_3)
+        self.ConnectFileUpload.setGeometry(QtCore.QRect(270, 10, 51, 41))
+        self.ConnectFileUpload.setStyleSheet("QPushButton{\n"
 "background-color: rgb(40, 41, 65);\n"
 "border-color: rgb(182, 149, 243);\n"
 "border-radius: 10px;\n"
 "padding-left:11px;\n"
 "\n"
 "}")
-        self.connect_file_upload.setText("")
+        self.ConnectFileUpload.setText("")
         icon1 = QtGui.QIcon()
-        icon1.addPixmap(QtGui.QPixmap("ui/icons/usb-2.png"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
-        self.connect_file_upload.setIcon(icon1)
-        self.connect_file_upload.setIconSize(QtCore.QSize(32, 32))
-        self.connect_file_upload.setCheckable(True)
-        self.connect_file_upload.setObjectName("connect_file_upload")
+        icon1.addPixmap(QtGui.QPixmap("../ui/icons/usb-2.png"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        self.ConnectFileUpload.setIcon(icon1)
+        self.ConnectFileUpload.setIconSize(QtCore.QSize(32, 32))
+        self.ConnectFileUpload.setCheckable(True)
+        self.ConnectFileUpload.setObjectName("ConnectFileUpload")
         self.connect_file_label = QtWidgets.QLabel(parent=self.widget_3)
         self.connect_file_label.setGeometry(QtCore.QRect(20, 10, 261, 41))
         self.connect_file_label.setStyleSheet("QLabel{\n"
@@ -460,7 +460,7 @@ class Ui_MainWindow(object):
 "}")
         self.ProgramModeBtn.setText("")
         icon2 = QtGui.QIcon()
-        icon2.addPixmap(QtGui.QPixmap("ui/icons/program-100.png"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        icon2.addPixmap(QtGui.QPixmap("../ui/icons/program-100.png"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
         self.ProgramModeBtn.setIcon(icon2)
         self.ProgramModeBtn.setIconSize(QtCore.QSize(60, 60))
         self.ProgramModeBtn.setObjectName("ProgramModeBtn")
@@ -473,7 +473,7 @@ class Ui_MainWindow(object):
 "}")
         self.ControllerProgrammingBtn.setText("")
         icon3 = QtGui.QIcon()
-        icon3.addPixmap(QtGui.QPixmap("ui/icons/processro-100.png"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        icon3.addPixmap(QtGui.QPixmap("../ui/icons/processro-100.png"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
         self.ControllerProgrammingBtn.setIcon(icon3)
         self.ControllerProgrammingBtn.setIconSize(QtCore.QSize(60, 60))
         self.ControllerProgrammingBtn.setObjectName("ControllerProgrammingBtn")
@@ -486,14 +486,14 @@ class Ui_MainWindow(object):
 "}")
         self.SettingsBtn.setText("")
         icon4 = QtGui.QIcon()
-        icon4.addPixmap(QtGui.QPixmap("ui/icons/settings-100.png"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        icon4.addPixmap(QtGui.QPixmap("../ui/icons/settings-100.png"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
         self.SettingsBtn.setIcon(icon4)
         self.SettingsBtn.setIconSize(QtCore.QSize(60, 60))
         self.SettingsBtn.setObjectName("SettingsBtn")
         MainWindow.setCentralWidget(self.centralwidget)
 
         self.retranslateUi(MainWindow)
-        self.stackedWidget.setCurrentIndex(0)
+        self.stackedWidget.setCurrentIndex(1)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -510,19 +510,19 @@ class Ui_MainWindow(object):
         self.LoadProgramBtn.setText(_translate("MainWindow", "ЗАГРУЗИТЬ"))
         self.label_7.setText(_translate("MainWindow", "РЕЖИМ НАСТРОЙКИ УСТРОЙСТВА"))
         self.label_13.setText(_translate("MainWindow", "Уровень логирования"))
-        self.load_from_device_btn.setText(_translate("MainWindow", "СЧИТАТЬ"))
-        self.load_to_device_btn.setText(_translate("MainWindow", "ЗАПИСАТЬ"))
+        self.LoadFromDeviceBtn.setText(_translate("MainWindow", "СЧИТАТЬ"))
+        self.UploadToDeviceBtn.setText(_translate("MainWindow", "ЗАПИСАТЬ"))
         self.label_14.setText(_translate("MainWindow", "Кол-во шагов за мм"))
         self.label_16.setText(_translate("MainWindow", "мм."))
-        self.logget_combo_box.setItemText(0, _translate("MainWindow", "NO_LOG"))
-        self.logget_combo_box.setItemText(1, _translate("MainWindow", "INFO"))
-        self.logget_combo_box.setItemText(2, _translate("MainWindow", "DEBUG"))
+        self.LoggerComboBox.setItemText(0, _translate("MainWindow", "NO_LOG"))
+        self.LoggerComboBox.setItemText(1, _translate("MainWindow", "INFO"))
+        self.LoggerComboBox.setItemText(2, _translate("MainWindow", "DEBUG"))
         self.label_17.setText(_translate("MainWindow", "шаг."))
         self.label_18.setText(_translate("MainWindow", "Деление шага"))
         self.label_19.setText(_translate("MainWindow", "Максимальная скорость"))
         self.label_10.setText(_translate("MainWindow", "ИНФОРМАЦИЯ ОБ УСТРОЙСТВЕ:"))
         self.label_11.setText(_translate("MainWindow", "Версия прошивки:"))
-        self.connect_btn.setText(_translate("MainWindow", "КОННЕКТ"))
+        self.ConnectBtn.setText(_translate("MainWindow", "КОННЕКТ"))
         self.label_12.setText(_translate("MainWindow", "Версия программы:"))
         self.program_version_label_2.setText(_translate("MainWindow", "0.0.1-alpha"))
         self.label_21.setText(_translate("MainWindow", "Developed by: Sinthetic-Ninja"))
