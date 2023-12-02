@@ -934,7 +934,7 @@ padding-left:11px;
          <bool>true</bool>
         </property>
        </widget>
-       <widget class="QLabel" name="connect_file_label">
+       <widget class="QLabel" name="ConnectFileLabel">
         <property name="geometry">
          <rect>
           <x>20</x>
@@ -947,6 +947,7 @@ padding-left:11px;
          <string notr="true">QLabel{
 background-color: rgb(255, 255, 255);
 color:  rgb(0, 0, 0);
+padding: 10px;
 }</string>
         </property>
         <property name="text">
@@ -956,7 +957,7 @@ color:  rgb(0, 0, 0);
          <enum>Qt::MarkdownText</enum>
         </property>
        </widget>
-       <widget class="QProgressBar" name="progress_bar">
+       <widget class="QProgressBar" name="ProgressBar">
         <property name="geometry">
          <rect>
           <x>550</x>
@@ -979,6 +980,26 @@ QProgressBar::chunk
         </property>
         <property name="value">
          <number>24</number>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="DisconnectBtn">
+        <property name="geometry">
+         <rect>
+          <x>400</x>
+          <y>10</y>
+          <width>131</width>
+          <height>41</height>
+         </rect>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QPushButton{
+background-color: rgb(255, 144, 139);
+border-color: rgb(255, 144, 139);
+border-radius: 10px;
+}</string>
+        </property>
+        <property name="text">
+         <string>ДИСКОННЕКТ</string>
         </property>
        </widget>
       </widget>

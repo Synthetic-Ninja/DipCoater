@@ -397,18 +397,19 @@ class Ui_MainWindow(object):
         self.ConnectFileUpload.setIconSize(QtCore.QSize(32, 32))
         self.ConnectFileUpload.setCheckable(True)
         self.ConnectFileUpload.setObjectName("ConnectFileUpload")
-        self.connect_file_label = QtWidgets.QLabel(parent=self.widget_3)
-        self.connect_file_label.setGeometry(QtCore.QRect(20, 10, 261, 41))
-        self.connect_file_label.setStyleSheet("QLabel{\n"
+        self.ConnectFileLabel = QtWidgets.QLabel(parent=self.widget_3)
+        self.ConnectFileLabel.setGeometry(QtCore.QRect(20, 10, 261, 41))
+        self.ConnectFileLabel.setStyleSheet("QLabel{\n"
 "background-color: rgb(255, 255, 255);\n"
 "color:  rgb(0, 0, 0);\n"
+"padding: 10px;\n"
 "}")
-        self.connect_file_label.setText("")
-        self.connect_file_label.setTextFormat(QtCore.Qt.TextFormat.MarkdownText)
-        self.connect_file_label.setObjectName("connect_file_label")
-        self.progress_bar = QtWidgets.QProgressBar(parent=self.widget_3)
-        self.progress_bar.setGeometry(QtCore.QRect(550, 20, 71, 23))
-        self.progress_bar.setStyleSheet("QProgressBar\n"
+        self.ConnectFileLabel.setText("")
+        self.ConnectFileLabel.setTextFormat(QtCore.Qt.TextFormat.MarkdownText)
+        self.ConnectFileLabel.setObjectName("ConnectFileLabel")
+        self.ProgressBar = QtWidgets.QProgressBar(parent=self.widget_3)
+        self.ProgressBar.setGeometry(QtCore.QRect(550, 20, 71, 23))
+        self.ProgressBar.setStyleSheet("QProgressBar\n"
 "{\n"
 "    text-align: center;\n"
 "}\n"
@@ -418,8 +419,16 @@ class Ui_MainWindow(object):
 "    background-color:rgb(182, 149, 243);\n"
 "}\n"
 "")
-        self.progress_bar.setProperty("value", 24)
-        self.progress_bar.setObjectName("progress_bar")
+        self.ProgressBar.setProperty("value", 24)
+        self.ProgressBar.setObjectName("ProgressBar")
+        self.DisconnectBtn = QtWidgets.QPushButton(parent=self.widget_3)
+        self.DisconnectBtn.setGeometry(QtCore.QRect(400, 10, 131, 41))
+        self.DisconnectBtn.setStyleSheet("QPushButton{\n"
+"background-color: rgb(255, 144, 139);\n"
+"border-color: rgb(255, 144, 139);\n"
+"border-radius: 10px;\n"
+"}")
+        self.DisconnectBtn.setObjectName("DisconnectBtn")
         self.stackedWidget.addWidget(self.device_configuration_page)
         self.settings_page = QtWidgets.QWidget()
         self.settings_page.setObjectName("settings_page")
@@ -523,6 +532,7 @@ class Ui_MainWindow(object):
         self.label_10.setText(_translate("MainWindow", "ИНФОРМАЦИЯ ОБ УСТРОЙСТВЕ:"))
         self.label_11.setText(_translate("MainWindow", "Версия прошивки:"))
         self.ConnectBtn.setText(_translate("MainWindow", "КОННЕКТ"))
+        self.DisconnectBtn.setText(_translate("MainWindow", "ДИСКОННЕКТ"))
         self.label_12.setText(_translate("MainWindow", "Версия программы:"))
         self.program_version_label_2.setText(_translate("MainWindow", "0.0.1-alpha"))
         self.label_21.setText(_translate("MainWindow", "Developed by: Sinthetic-Ninja"))

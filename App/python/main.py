@@ -4,6 +4,7 @@ import json.decoder
 import math
 
 import marshmallow.exceptions
+from serial.tools import list_ports
 from PyQt6 import QtWidgets
 from PyQt6.QtCore import QSize
 
@@ -41,8 +42,16 @@ class MyWindow(QtWidgets.QMainWindow):
         # LOGGER FOR TEXT BROWSER
         self.ui_logger = GuiLogger(self.ui.textBrowser)
 
-        #UART
-        self.uart = UartConnector(self.ui_logger)
+        # UART
+        self.uart = UartConnector(
+            self.ui_logger,
+            self.handle_disconnect_button,
+            self.ui.ProgressBar,
+
+        )
+
+        self.ui.ProgressBar.setVisible(False)
+        self.hide_disconnect_button()
 
 
     @staticmethod
@@ -121,8 +130,16 @@ class MyWindow(QtWidgets.QMainWindow):
         # BINDING CONNECT BUTTONS
         self.ui.ConnectBtn.clicked.connect(self.handle_connect)
 
-        #BINDING LOAD PROGRAM TO DEVICE BTN
+        # BINDING LOAD PROGRAM TO DEVICE BTN
         self.ui.UploadToDeviceBtn.clicked.connect(self.handle_save_settings)
+
+        # BINDING DISCONNECT BTN
+        self.ui.DisconnectBtn.clicked.connect(self.handle_disconnect_button)
+
+        # BINDING UPLAD SERIAL FILE BTN
+        self.ui.ConnectFileUpload.clicked.connect(
+            self.connect_file_upload_btn_handle
+        )
 
     def _go_to_page(self, page: QtWidgets.QWidget) -> None:
         self.ui.stackedWidget.setCurrentWidget(page)
@@ -326,9 +343,28 @@ class MyWindow(QtWidgets.QMainWindow):
         file_name = '/'.join(file_path.split('/')[-2:])
         self.ui.ProgramFileNameLabel.setText(file_name)
 
+    def connect_file_upload_btn_handle(self):
+        ports = list_ports.comports()
+
+        items = [port.device for port in ports]
+        item, ok = QtWidgets.QInputDialog().getItem(
+            self,
+            'Выберите serial порт',
+            'Порт:',
+            items, 0, False)
+        if ok and item:
+            self.ui.ConnectFileLabel.setText(item)
+
     def handle_connect(self) -> None:
+
+        serial_port = self.ui.ConnectFileLabel.text()
+        if not serial_port:
+            self._raise_error('Не выбрал serial порт')
+            return
+
+        self.ui.DisconnectBtn.setVisible(True)
         try:
-            self.uart.make_connection('/dev/tty.usbserial-0001')
+            self.uart.make_connection(serial_port)
         except RuntimeError as e:
             self._raise_error(str(e))
 
@@ -366,7 +402,6 @@ class MyWindow(QtWidgets.QMainWindow):
             * driver_steps_division
         )
 
-        print(max_steps_count)
         settings = Settings(
             steps_per_mm=steps_per_mm,
             max_steps_count=max_steps_count,
@@ -377,6 +412,13 @@ class MyWindow(QtWidgets.QMainWindow):
         )
 
         self.uart.load_settings(settings)
+
+    def hide_disconnect_button(self):
+        self.ui.DisconnectBtn.setVisible(False)
+
+    def handle_disconnect_button(self):
+        self.uart.disconnect()
+        self.hide_disconnect_button()
 
 
 def main():
