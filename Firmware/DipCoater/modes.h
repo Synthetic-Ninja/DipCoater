@@ -811,6 +811,18 @@ class ConnetionMode: public BaseMode
                 tft->print_negative("CONNECTION CLOSED");
                 state = ConnetionModeState::CONNECTION_CLOSED;
                 break;
+              
+              case 0x13:
+                tft->print_positive("SENDING SETTINGS");
+                settings = eeprom_settings->get();
+                Serial.write((byte*)&settings, sizeof(settings));
+                tft->print_positive("SENT SETTINGS");
+                break;
+              
+              case 0x14:
+                tft->print_positive("SENDING FIRMWARE");
+                Serial.println("alpha-0.0.1");
+                break;
 
               default:
                 tft->print_negative("UNKNOWN COMMAND");

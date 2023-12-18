@@ -339,6 +339,10 @@ class Ui_MainWindow(object):
         self.device_program_version.setGeometry(QtCore.QRect(140, 50, 71, 21))
         self.device_program_version.setText("")
         self.device_program_version.setObjectName("device_program_version")
+        self.DeviceVersionLabel = QtWidgets.QLabel(parent=self.frame_4)
+        self.DeviceVersionLabel.setGeometry(QtCore.QRect(10, 80, 121, 16))
+        self.DeviceVersionLabel.setText("")
+        self.DeviceVersionLabel.setObjectName("DeviceVersionLabel")
         self.CountOfStepsEdit = QtWidgets.QLineEdit(parent=self.frame_3)
         self.CountOfStepsEdit.setGeometry(QtCore.QRect(180, 20, 161, 31))
         self.CountOfStepsEdit.setStyleSheet("QLineEdit{\n"

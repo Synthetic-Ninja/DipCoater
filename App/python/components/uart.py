@@ -1,3 +1,4 @@
+import struct
 import time
 
 import serial
@@ -233,10 +234,10 @@ class UartConnector:
     def load_settings(self, settings: Settings) -> None:
         if not self.connection:
             raise UartException("Serial не открыт")
-        self.logger.info('Writing settings')
+        self.logger.info('Отправляем параметры в устройство')
         self.serial_port.write(bytes.fromhex('11'))
         self.serial_port.write(bytes(settings))
-        self.logger.success('Settings sent...')
+        self.logger.success('Параметры отправлены...')
 
     def disconnect(self) -> None:
         self.logger.info('Отключение...')
@@ -252,3 +253,27 @@ class UartConnector:
         if self.serial_port:
             self.serial_port.close()
             self.serial_port = None
+
+    def get_settings(self) -> Settings:
+        if not self.connection:
+            raise UartException("Serial не открыт")
+
+        self.logger.info('Считываем параметры с устройства')
+        self.serial_port.write(bytes.fromhex('13'))
+        data = self.serial_port.read(12)
+        unpacked_data = struct.unpack('<IIBBBB', data)
+        self.logger.success('Параметры считаны')
+        return Settings(*unpacked_data)
+
+    def get_firmware_version(self) -> str:
+        if not self.connection:
+            raise UartException("Serial не открыт")
+        self.logger.info('Считываем версию прошивки с устройства')
+        self.serial_port.write(bytes.fromhex('14'))
+        message = self.serial_port.readline().decode().rstrip()
+        self.logger.success('Прошивка считана')
+        return message
+
+
+
+

@@ -17,7 +17,7 @@ from python.components.commands import CommandDown
 from python.components.gui_logger import GuiLogger
 from python.components.uart import UartConnector
 from python.components.uart import Settings
-
+from python.components.uart import UartException
 
 class MyWindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -136,9 +136,14 @@ class MyWindow(QtWidgets.QMainWindow):
         # BINDING DISCONNECT BTN
         self.ui.DisconnectBtn.clicked.connect(self.handle_disconnect_button)
 
-        # BINDING UPLAD SERIAL FILE BTN
+        # BINDING UPLOAD SERIAL FILE BTN
         self.ui.ConnectFileUpload.clicked.connect(
             self.connect_file_upload_btn_handle
+        )
+
+        # BINDING LOAD FROM DEVICE BTN
+        self.ui.LoadFromDeviceBtn.clicked.connect(
+            self.handle_load_from_device_btn,
         )
 
     def _go_to_page(self, page: QtWidgets.QWidget) -> None:
@@ -411,7 +416,10 @@ class MyWindow(QtWidgets.QMainWindow):
             debug=log_param,
         )
 
-        self.uart.load_settings(settings)
+        try:
+            self.uart.load_settings(settings)
+        except UartException as exc:
+            self._raise_error(str(exc))
 
     def hide_disconnect_button(self):
         self.ui.DisconnectBtn.setVisible(False)
@@ -419,6 +427,22 @@ class MyWindow(QtWidgets.QMainWindow):
     def handle_disconnect_button(self):
         self.uart.disconnect()
         self.hide_disconnect_button()
+
+    def handle_load_from_device_btn(self):
+        try:
+            firmware_version = self.uart.get_firmware_version()
+            settings = self.uart.get_settings()
+        except UartException as exc:
+            self._raise_error(str(exc))
+            return
+        self.ui.DeviceVersionLabel.setText(firmware_version)
+
+        self.ui.CountOfStepsEdit.setText(str(settings.steps_per_mm))
+        self.ui.StepsDivisionEdit.setText(str(settings.driver_steps_division))
+        self.ui.MaxSpeedEdit.setText(
+            str(float(settings.max_steps_count /
+            (settings.steps_per_mm * settings.driver_steps_division))
+        ))
 
 
 def main():
